@@ -1,6 +1,8 @@
 # MeaningWire Roadmap
 
-This roadmap describes direction, not promises. Dates and scope may change as evidence, contributors, standards research, and implementation results improve the plan.
+This roadmap describes direction, not promises. Dates and scope may change as evidence, standards research, and implementation results improve the plan.
+
+The repository is public during development, but the roadmap is not a request for outside developers to implement unfinished items. The immediate goal is to complete and validate a coherent first usable release before any broader launch or adoption push.
 
 ## Phase 1 — Name and identity
 
@@ -17,7 +19,7 @@ This roadmap describes direction, not promises. Dates and scope may change as ev
 
 - README and project positioning
 - governance model
-- contribution guide
+- contribution policy
 - code of conduct
 - security policy
 - support policy
@@ -27,7 +29,8 @@ This roadmap describes direction, not promises. Dates and scope may change as ev
 - issue and pull-request templates
 - RFC and Labs structure
 - Apache-2.0 project license
-- organization profile and public contact strategy
+- protected default branch
+- private project contact and disclosure path
 
 ## Phase 3 — Technical MVP
 
@@ -58,14 +61,17 @@ Initial canonical domains:
 - Governance
 - Integration
 
-## Phase 4 — Documentation experience
+## Phase 4 — Documentation and release experience
 
 - evaluate Astro + Starlight against project needs;
 - accessible documentation site targeting WCAG 2.2 AA;
+- concise quickstart and installation path;
 - beginner, builder, researcher, and integration/enterprise entry paths;
 - architecture explanations and worked mapping examples;
 - standards crosswalk documentation;
-- searchable schema and mapping reference.
+- searchable schema and mapping reference;
+- reproducible release automation and release evidence;
+- release artifacts with documented version and provenance.
 
 ## Phase 5 — Real-world proof
 
@@ -77,14 +83,33 @@ Initial canonical domains:
 
 Actual integrations into unrelated existing repositories are separate workstreams governed by those repositories' own authority and approval processes.
 
+## Release threshold
+
+Before MeaningWire is presented as something people should try or adopt, the project should have evidence for a minimum release threshold:
+
+- a versioned usable build;
+- deterministic validation;
+- working CLI behavior for the documented quickstart;
+- at least one complete mapping / adapter path that demonstrates the model end to end;
+- reproducible release automation;
+- release provenance and artifacts;
+- installation and quickstart documentation that works without private context;
+- explicit statements of supported, experimental, and unfinished behavior.
+
+Meeting this threshold enables a release announcement. It does not imply production readiness or stable compatibility unless those claims are separately supported.
+
 ## Phase 6 — Public preview
 
-- versioned preview release;
-- documented compatibility and migration expectations;
-- GitHub Discussions if useful;
-- transparent RFC process;
-- expert-review requests where genuine independent review is needed;
-- security and supply-chain baseline appropriate to a public preview.
+After the release threshold is met:
+
+- publish a versioned preview release;
+- announce what is actually available rather than pitching unfinished roadmap ideas;
+- document compatibility and migration expectations;
+- open broader review and contribution channels if useful;
+- enable GitHub Discussions if it serves a real purpose;
+- use the transparent RFC process for consequential public-contract changes;
+- request expert review where genuine independent review is needed;
+- establish a security and supply-chain baseline appropriate to a public preview.
 
 ## Phase 7 — Growth
 
@@ -94,7 +119,7 @@ Potential directions, subject to evidence:
 - package publication;
 - expanded SDK language support;
 - technology and standards radar;
-- contributor and maintainer progression;
+- contributor and maintainer progression if sustained external participation develops;
 - public interoperability test corpus;
 - conformance tooling;
 - case studies based on verified real-world use;
@@ -115,8 +140,9 @@ A roadmap item should earn priority by improving at least one of:
 - semantic correctness;
 - interoperability reach;
 - provenance / authority safety;
-- contributor usability;
+- developer usability;
 - deterministic validation;
+- release readiness;
 - standards alignment;
 - accessibility;
 - security and operational trust.
