@@ -23,9 +23,10 @@ This roadmap describes direction, not promises. Dates and scope may change as ev
 - support policy
 - roadmap
 - citation metadata
+- changelog
 - issue and pull-request templates
 - RFC and Labs structure
-- explicit license decision
+- Apache-2.0 project license
 - organization profile and public contact strategy
 
 ## Phase 3 — Technical MVP
