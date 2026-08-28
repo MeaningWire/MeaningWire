@@ -75,6 +75,8 @@ Participation is subject to [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
 Do not open public issues for suspected vulnerabilities that could put users at risk. Follow [SECURITY.md](SECURITY.md).
 
-## License status
+## License
 
-The project license has not yet been finalized. Contributions should not be submitted with assumptions about downstream reuse rights until the repository contains an explicit license and contribution policy aligned to it.
+MeaningWire is licensed under the [Apache License 2.0](LICENSE). Unless explicitly stated otherwise, contributions intentionally submitted for inclusion in MeaningWire are provided under Apache-2.0 as described by the license's contribution terms.
+
+Contributors are responsible for ensuring they have the right to submit their work and any third-party material it contains.
