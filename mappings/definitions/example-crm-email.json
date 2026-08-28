@@ -1,0 +1,36 @@
+{
+  "mapping_id": {
+    "namespace": "urn:meaningwire:mapping",
+    "id": "example-crm-email",
+    "version": "0.1.0"
+  },
+  "version": "0.1.0",
+  "source": {
+    "contract": {
+      "namespace": "urn:example:contract",
+      "id": "crm-customer",
+      "version": "1"
+    },
+    "path": "$.email"
+  },
+  "target": {
+    "contract": {
+      "namespace": "urn:example:contract",
+      "id": "party",
+      "version": "0.0.1"
+    },
+    "path": "$.contact.email"
+  },
+  "relationship": "equivalent",
+  "transform": {
+    "kind": "identity",
+    "description": "Synthetic example: preserve the CRM email value without transformation."
+  },
+  "maturity": "EXPERIMENTAL",
+  "provenance": {
+    "source": {
+      "namespace": "urn:meaningwire:example",
+      "id": "synthetic-crm-crosswalk"
+    }
+  }
+}
