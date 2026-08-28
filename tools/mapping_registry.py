@@ -81,7 +81,9 @@ def load_records() -> list[dict[str, Any]]:
     if extra:
         raise MappingRegistryError(f"mapping registry contains unsupported keys: {sorted(extra)}")
     require_string(registry.get("registry_version"), "registry.registry_version")
-    require_string(registry.get("maturity"), "registry.maturity")
+    maturity = require_string(registry.get("maturity"), "registry.maturity")
+    if maturity not in validate_contracts.MATURITY_STATES:
+        raise MappingRegistryError("registry.maturity is not recognized")
 
     entries = registry.get("mappings")
     if not isinstance(entries, list) or not entries:
@@ -190,7 +192,10 @@ def require_unique(candidates: list[dict[str, Any]]) -> dict[str, Any]:
     if not candidates:
         raise MappingRegistryError("no mapping matches the requested criteria")
     if len(candidates) > 1:
-        identities = [reference_key(item["mapping_id"], "mapping.mapping_id", require_version=True) for item in candidates]
+        identities = [
+            reference_key(item["mapping_id"], "mapping.mapping_id", require_version=True)
+            for item in candidates
+        ]
         raise MappingRegistryError(f"mapping selection is ambiguous: {identities}")
     return candidates[0]
 
@@ -221,7 +226,10 @@ def get_mapping(namespace: str, identifier: str, version: str | None = None) -> 
 
 def main() -> int:
     records = load_records()
-    print(f"PASS: {len(records)} mappings registered with deterministic lookup and explicit ambiguity handling.")
+    print(
+        f"PASS: {len(records)} mappings registered with deterministic lookup "
+        "and explicit ambiguity handling."
+    )
     return 0
 
 
