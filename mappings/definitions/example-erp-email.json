@@ -1,0 +1,36 @@
+{
+  "mapping_id": {
+    "namespace": "urn:meaningwire:mapping",
+    "id": "example-erp-email",
+    "version": "0.1.0"
+  },
+  "version": "0.1.0",
+  "source": {
+    "contract": {
+      "namespace": "urn:example:contract",
+      "id": "erp-account",
+      "version": "3"
+    },
+    "path": "$.primary_email"
+  },
+  "target": {
+    "contract": {
+      "namespace": "urn:example:contract",
+      "id": "party",
+      "version": "0.0.1"
+    },
+    "path": "$.contact.email"
+  },
+  "relationship": "equivalent",
+  "transform": {
+    "kind": "identity",
+    "description": "Synthetic example: preserve the ERP primary email value without transformation."
+  },
+  "maturity": "EXPERIMENTAL",
+  "provenance": {
+    "source": {
+      "namespace": "urn:meaningwire:example",
+      "id": "synthetic-erp-crosswalk"
+    }
+  }
+}
