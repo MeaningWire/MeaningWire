@@ -6,7 +6,11 @@ MeaningWire is in an early development stage and is not yet declared production 
 
 Please do **not** disclose a vulnerability publicly if doing so could put users, systems, credentials, data, or downstream integrations at risk.
 
-Until a dedicated project security contact and GitHub private vulnerability reporting workflow are established, use a private GitHub contact path to the repository owner/maintainer and provide only the minimum information needed to establish contact. Do not place secrets, exploit payloads, personal data, or sensitive production details in public issues.
+MeaningWire does not yet publish a dedicated security email and GitHub private vulnerability reporting has not yet been established for the project.
+
+If a private GitHub contact path to the repository owner or maintainer is available, use it and initially provide only the minimum information needed to establish contact.
+
+If no private contact path is available, open a public issue containing only a request for private security contact. Do **not** include vulnerability details, exploit steps, credentials, personal data, sensitive production information, or attachments in that public issue. Sensitive details should be shared only after a private channel is established.
 
 A future revision of this policy will publish a dedicated security contact and coordinated disclosure workflow.
 
