@@ -1,0 +1,24 @@
+{
+  "registry_version": "0.1.0",
+  "maturity": "EXPERIMENTAL",
+  "mappings": [
+    {
+      "mapping_id": {
+        "namespace": "urn:meaningwire:mapping",
+        "id": "example-crm-email",
+        "version": "0.1.0"
+      },
+      "version": "0.1.0",
+      "path": "mappings/definitions/example-crm-email.json"
+    },
+    {
+      "mapping_id": {
+        "namespace": "urn:meaningwire:mapping",
+        "id": "example-erp-email",
+        "version": "0.1.0"
+      },
+      "version": "0.1.0",
+      "path": "mappings/definitions/example-erp-email.json"
+    }
+  ]
+}
