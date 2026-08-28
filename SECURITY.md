@@ -6,13 +6,11 @@ MeaningWire is in an early development stage and is not yet declared production 
 
 Please do **not** disclose a vulnerability publicly if doing so could put users, systems, credentials, data, or downstream integrations at risk.
 
-MeaningWire does not yet publish a dedicated security email and GitHub private vulnerability reporting has not yet been established for the project.
+Report suspected vulnerabilities privately to **meaningwire@proton.me** with a subject beginning with **`SECURITY:`**.
 
-If a private GitHub contact path to the repository owner or maintainer is available, use it and initially provide only the minimum information needed to establish contact.
+In the initial message, provide only the information reasonably needed to understand and triage the report. Do not send live credentials, private keys, authentication tokens, personal data, sensitive production datasets, or destructive exploit payloads unless a safe handling path has first been agreed.
 
-If no private contact path is available, open a public issue containing only a request for private security contact. Do **not** include vulnerability details, exploit steps, credentials, personal data, sensitive production information, or attachments in that public issue. Sensitive details should be shared only after a private channel is established.
-
-A future revision of this policy will publish a dedicated security contact and coordinated disclosure workflow.
+GitHub private vulnerability reporting may be added as the project matures. Until then, the project email above is the primary private reporting channel.
 
 ## Useful report contents
 
@@ -52,7 +50,7 @@ No stable or supported release exists yet. Security fixes during the pre-release
 
 Before stable release, the project plans to define and implement:
 
-- private vulnerability reporting;
+- GitHub private vulnerability reporting or an equivalent coordinated disclosure workflow;
 - dependency and secret scanning;
 - branch and workflow protections;
 - least-privilege GitHub Actions permissions;
