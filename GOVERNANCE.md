@@ -13,6 +13,7 @@ Public repository visibility does not imply distributed project authority. Until
 - Contributors receive attribution for their work.
 - Maintainer roles are earned through sustained, constructive participation rather than implied by branding.
 - No person, company, standards body, or downstream system receives hidden decision rights.
+- Supported public releases must be understandable, buildable, testable, and releasable without access to a private or proprietary MeaningWire codebase.
 
 ## Current maintainership
 
@@ -85,6 +86,23 @@ A maturity label is a statement about project confidence and support, not market
 The project is currently working toward its first usable versioned release. Before that release is presented for broader use, MeaningWire intends to establish reproducible build and release automation, deterministic validation, documented compatibility expectations, release provenance, and a concise quickstart.
 
 Stable release policy is not yet finalized. Before the first stable release, the project will define versioning, compatibility, deprecation, provenance, and release-verification expectations.
+
+## Public implementation boundary
+
+MeaningWire may be informed by prior research, experiments, prototypes, standards analysis, implementation experience, or requirements discovered outside this repository. Those inputs may shape the public implementation, but they do not create a hidden dependency or justify unsupported claims about a prior proprietary product.
+
+For a capability to be represented as supported in a public release:
+
+- the required source must be public or obtained from documented public dependencies;
+- required schemas, mappings, interfaces, fixtures, and validation rules must be public and versioned;
+- deterministic validation and release checks must work without private repositories, private test data, or undocumented services;
+- release automation and provenance must be reproducible from the public source;
+- proprietary libraries, hidden packages, private schemas, and private build steps must not be required for ordinary supported use;
+- incorporated code must have clear provenance and compatible licensing.
+
+Private knowledge may inform design. Private code is not a hidden dependency of the public product.
+
+The detailed engineering rule is documented in [docs/architecture/public-implementation-boundary.md](docs/architecture/public-implementation-boundary.md).
 
 ## Conflicts of interest
 

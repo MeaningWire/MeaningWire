@@ -15,7 +15,7 @@ The repository is public during development, but the roadmap is not a request fo
 
 ## Phase 2 — Public foundation
 
-**Status: in progress**
+**Status: complete**
 
 - README and project positioning
 - governance model
@@ -31,6 +31,8 @@ The repository is public during development, but the roadmap is not a request fo
 - Apache-2.0 project license
 - protected default branch
 - private project contact and disclosure path
+- public organization profile
+- quiet pre-release posture
 
 ## Phase 3 — Technical MVP
 
@@ -48,6 +50,8 @@ Target capabilities:
 - two representative read-oriented reference adapters;
 - deterministic tests;
 - synthetic / isolated downstream compatibility proof.
+
+Phase 3 is governed by the [public implementation boundary](docs/architecture/public-implementation-boundary.md): supported MeaningWire behavior must be understandable, buildable, testable, and releasable without access to a proprietary or private MeaningWire codebase. Prior research, experiments, prototypes, and implementation lessons may inform the work, but the released public implementation must stand on its own.
 
 Initial canonical domains:
 
@@ -94,7 +98,8 @@ Before MeaningWire is presented as something people should try or adopt, the pro
 - reproducible release automation;
 - release provenance and artifacts;
 - installation and quickstart documentation that works without private context;
-- explicit statements of supported, experimental, and unfinished behavior.
+- explicit statements of supported, experimental, and unfinished behavior;
+- a fresh-environment proof that supported public software can be built, tested, validated, and released without private repositories, private packages, hidden schemas, private test data, or undocumented services.
 
 Meeting this threshold enables a release announcement. It does not imply production readiness or stable compatibility unless those claims are separately supported.
 

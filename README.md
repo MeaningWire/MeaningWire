@@ -45,6 +45,9 @@ The goal is not to replace source systems. It is to make meaning explicit, versi
 7. **Public contracts first.** Downstream projects consume released public interfaces with no private shortcuts.
 8. **Accessibility matters.** Documentation and interfaces target WCAG 2.2 AA and low-cognitive-load interaction patterns.
 9. **Maturity is visible.** Experimental ideas are labeled honestly rather than presented as stable features.
+10. **The public implementation stands on its own.** Prior research, experiments, prototypes, and implementation lessons may inform the design, but supported releases must be understandable, buildable, testable, and releasable without access to a private or proprietary MeaningWire codebase.
+
+The engineering boundary behind principle 10 is documented in [Public Implementation Boundary](docs/architecture/public-implementation-boundary.md).
 
 ## Standards strategy
 

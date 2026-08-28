@@ -51,6 +51,12 @@ The project intends to preserve source identity, transformation history, mapping
 
 Agents and models may propose classifications, mappings, transformations, or actions. Their output must retain provenance and uncertainty and must not silently acquire human approval authority.
 
+### The public implementation stands on its own
+
+MeaningWire may be informed by prior research, experiments, prototypes, standards analysis, requirements, or implementation lessons, but released MeaningWire software must not depend on a private or proprietary MeaningWire codebase.
+
+The public repository must contain, or document public dependencies for, everything needed to understand, build, test, validate, and release supported behavior. See [Public Implementation Boundary](public-implementation-boundary.md).
+
 ## Initial domain model
 
 The planned canonical domains are:
