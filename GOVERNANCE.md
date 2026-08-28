@@ -1,6 +1,8 @@
 # MeaningWire Governance
 
-MeaningWire is an early-stage public open-source project. Governance is intentionally lightweight at the beginning and is expected to evolve as independent contributors and maintainers emerge.
+MeaningWire is an early-stage public open-source project in pre-release development. Governance is intentionally lightweight at the beginning and may evolve later if the project develops sustained external participation and a broader maintainer community.
+
+Public repository visibility does not imply distributed project authority. Until governance explicitly changes, release direction and acceptance decisions remain with the current maintainer under the processes documented here.
 
 ## Principles
 
@@ -16,7 +18,9 @@ MeaningWire is an early-stage public open-source project. Governance is intentio
 
 The project currently has a single administrative maintainer. This is a factual description of the present state, not a claim of a larger team.
 
-As participation grows, additional maintainers may be added based on demonstrated contribution quality, reliability, project understanding, respectful collaboration, and willingness to uphold project governance.
+The first usable release does not depend on recruiting additional maintainers or contributors.
+
+If sustained external participation develops over time, additional maintainers may be added based on demonstrated contribution quality, reliability, project understanding, respectful collaboration, and willingness to uphold project governance.
 
 ## Decision classes
 
@@ -35,12 +39,12 @@ These require:
 1. a written rationale;
 2. compatibility and migration analysis;
 3. tests or executable examples where practical;
-4. public review through a pull request or RFC;
+4. review through a pull request or RFC;
 5. explicit maturity labeling.
 
 ### Governance and security changes
 
-Changes that alter maintainer authority, release authority, disclosure policy, contribution rights, or security boundaries require an explicit governance proposal and public review.
+Changes that alter maintainer authority, release authority, disclosure policy, contribution rights, or security boundaries require an explicit governance proposal and documented review.
 
 ## RFC process
 
@@ -78,7 +82,9 @@ A maturity label is a statement about project confidence and support, not market
 
 ## Releases
 
-Stable release policy is not yet finalized. Before the first stable release, the project will define versioning, compatibility, deprecation, provenance, and release-signing expectations.
+The project is currently working toward its first usable versioned release. Before that release is presented for broader use, MeaningWire intends to establish reproducible build and release automation, deterministic validation, documented compatibility expectations, release provenance, and a concise quickstart.
+
+Stable release policy is not yet finalized. Before the first stable release, the project will define versioning, compatibility, deprecation, provenance, and release-verification expectations.
 
 ## Conflicts of interest
 

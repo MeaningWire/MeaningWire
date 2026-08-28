@@ -1,23 +1,28 @@
 # Contributing to MeaningWire
 
-Thank you for considering a contribution. MeaningWire is intentionally being built in public, and careful disagreement is welcome.
+MeaningWire is currently in pre-release development. This document exists so contributions can be handled consistently if someone independently chooses to participate; it is **not** a request for outside developers to build the project or complete the roadmap.
 
-## Good first contributions
+The current priority is to produce, validate, document, and release a coherent first usable version. Core release work remains maintainer-owned unless explicitly delegated through the normal repository process.
 
-Useful early contributions include:
+## Useful pre-release contributions
 
-- documentation corrections and examples;
-- terminology and semantic-model critiques;
-- standards crosswalk research;
+Low-risk contributions can still be valuable, especially:
+
+- documentation corrections and concrete examples;
+- terminology and semantic-model critiques tied to specific public material;
+- standards crosswalk research with sources;
 - accessibility improvements;
 - deterministic tests;
 - schema and mapping edge cases;
-- adapter design feedback;
 - reproducible bug reports.
+
+Large speculative feature submissions or broad subsystem implementations may be premature before the relevant public contracts exist.
 
 ## Before opening a large pull request
 
 For changes to canonical schemas, mapping semantics, identifiers, event contracts, provenance, authority rules, adapter interfaces, or governance, open an issue or RFC first. Large semantic changes are easier to review when the problem and alternatives are discussed before implementation.
+
+Do not assume an unfinished roadmap item is an invitation to implement it independently. The maintainer may already be working on the underlying contract or may intentionally defer it until other prerequisites exist.
 
 ## Contribution workflow
 
@@ -48,7 +53,7 @@ Not every question applies to every change, but semantic and interoperability ch
 
 Do not optimize a public contract around a private or proprietary downstream implementation unless the abstraction also makes sense independently.
 
-Vendor-specific adapters are welcome when they terminate at public MeaningWire contracts and do not quietly redefine the canonical model around that vendor.
+Vendor-specific adapters may be considered when they terminate at public MeaningWire contracts and do not quietly redefine the canonical model around that vendor.
 
 ## AI-assisted contributions
 
