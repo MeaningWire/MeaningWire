@@ -90,6 +90,12 @@ See:
 - [Changelog](CHANGELOG.md)
 - [Citation metadata](CITATION.cff)
 
+## Contact
+
+General project contact: **meaningwire@proton.me**
+
+For security vulnerabilities, follow [SECURITY.md](SECURITY.md) rather than posting sensitive details publicly. For ordinary bugs, documentation problems, and feature proposals, use GitHub issues so discussion can benefit the project community.
+
 ## Maturity model
 
 Frontier concepts may move through:
