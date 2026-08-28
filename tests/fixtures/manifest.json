@@ -1,0 +1,8 @@
+{
+  "fixtures": [
+    {"path": "tests/fixtures/valid/envelope-source.json", "kind": "envelope", "valid": true},
+    {"path": "tests/fixtures/valid/mapping-equivalent.json", "kind": "mapping", "valid": true},
+    {"path": "tests/fixtures/invalid/envelope-model-approved.json", "kind": "envelope", "valid": false, "error_contains": "non-human authority cannot assert approval"},
+    {"path": "tests/fixtures/invalid/mapping-lossy-no-notes.json", "kind": "mapping", "valid": false, "error_contains": "lossy mapping requires loss_notes"}
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:meaningwire:schema:mapping:definition:0.1.0",
+  "title": "MeaningWire Mapping Definition",
+  "description": "Explicit, versioned semantic relationship between source and target contract paths.",
+  "x-meaningwire-contract-version": "0.1.0",
+  "x-meaningwire-maturity": "EXPERIMENTAL",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["mapping_id", "version", "source", "target", "relationship", "maturity", "provenance"],
+  "properties": {
+    "mapping_id": {"$ref": "urn:meaningwire:schema:core:reference:0.1.0"},
+    "version": {"type": "string", "minLength": 1},
+    "source": {"type": "object", "additionalProperties": false, "required": ["contract", "path"], "properties": {"contract": {"$ref": "urn:meaningwire:schema:core:reference:0.1.0"}, "path": {"type": "string", "minLength": 1}}},
+    "target": {"type": "object", "additionalProperties": false, "required": ["contract", "path"], "properties": {"contract": {"$ref": "urn:meaningwire:schema:core:reference:0.1.0"}, "path": {"type": "string", "minLength": 1}}},
+    "relationship": {"type": "string", "enum": ["exact", "equivalent", "broader", "narrower", "derived", "transformed", "lossy", "unsupported"]},
+    "transform": {"type": "object", "additionalProperties": false, "required": ["kind"], "properties": {"kind": {"type": "string", "enum": ["identity", "expression", "lookup", "code", "manual"]}, "description": {"type": "string", "minLength": 1}}},
+    "loss_notes": {"type": "string", "minLength": 1},
+    "maturity": {"type": "string", "enum": ["DISCOVERED", "RESEARCH", "EVALUATED", "EXPERIMENTAL", "PREVIEW", "STABLE", "REJECTED", "SUPERSEDED", "DEPRECATED"]},
+    "provenance": {"$ref": "urn:meaningwire:schema:core:provenance:0.1.0"}
+  },
+  "allOf": [{"if": {"properties": {"relationship": {"const": "lossy"}}, "required": ["relationship"]}, "then": {"required": ["loss_notes"]}}]
+}

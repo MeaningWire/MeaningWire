@@ -1,0 +1,13 @@
+{
+  "contract": {"namespace": "urn:example:contract", "id": "party", "version": "0.0.1"},
+  "record": {"namespace": "urn:example:source:crm:party", "id": "C-1001"},
+  "data": {"display_name": "Example Organization"},
+  "provenance": {
+    "source": {"namespace": "urn:example:source:crm", "id": "customer/C-1001"},
+    "source_version": "42",
+    "observed_at": "2026-08-28T22:00:00Z",
+    "transformations": [{"operation": "normalize-party", "mapping": {"namespace": "urn:meaningwire:mapping", "id": "example-party-map", "version": "0.1.0"}, "performed_by": {"namespace": "urn:example:system", "id": "mapper"}, "performed_at": "2026-08-28T22:00:01Z"}]
+  },
+  "authority": {"kind": "source_authority", "actor": {"namespace": "urn:example:system", "id": "crm"}, "scope": ["source-record"], "approval": "not_asserted", "basis": "Source system supplied the record."},
+  "maturity": "EXPERIMENTAL"
+}

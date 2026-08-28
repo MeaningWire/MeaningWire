@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:meaningwire:schema:core:reference:0.1.0",
+  "title": "MeaningWire Reference",
+  "description": "Vendor-independent reference using an explicit identifier namespace.",
+  "x-meaningwire-contract-version": "0.1.0",
+  "x-meaningwire-maturity": "EXPERIMENTAL",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["namespace", "id"],
+  "properties": {
+    "namespace": {"type": "string", "minLength": 1},
+    "id": {"type": "string", "minLength": 1},
+    "version": {"type": "string", "minLength": 1}
+  }
+}
