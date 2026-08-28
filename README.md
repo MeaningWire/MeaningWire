@@ -4,7 +4,9 @@
 
 MeaningWire is a vendor-neutral, open-source semantic interoperability framework for connecting systems, data, APIs, events, AI agents, automation, and knowledge workflows through shared public contracts rather than brittle point-to-point integrations.
 
-> **Project status:** early public foundation. The architecture, governance, schemas, mappings, and APIs are being developed in the open. No production-readiness or compatibility guarantees are claimed yet.
+> **Project status: pre-release development.** This repository is public for transparency, inspectability, and durable project history. MeaningWire has not announced a usable release, does not claim production readiness, and does not recommend depending on unfinished contracts yet.
+
+Public visibility is not a request for outside developers to build the project. The current priority is to produce, validate, document, and release a coherent first usable version before any broader community or adoption push.
 
 ## Why MeaningWire
 
@@ -73,11 +75,25 @@ docs/           architecture, guides, RFCs, Labs, and research
 .github/        issue forms, pull-request templates, and project automation
 ```
 
-The repository will begin as a monorepo so contracts, tooling, documentation, and tests can evolve together while the project is young.
+The repository begins as a monorepo so contracts, tooling, documentation, and tests can evolve together while the project is young.
 
-## Governance and contribution
+## Pre-release posture
 
-MeaningWire is being built publicly and deliberately. Project governance, contribution rules, support boundaries, security reporting, RFC procedures, and roadmap material are being introduced through reviewed pull requests.
+MeaningWire is being developed in a public repository, but it is not being publicly launched yet.
+
+Until the first usable versioned release is ready:
+
+- no production-readiness or compatibility guarantee is made;
+- no broad adoption or contributor-recruitment campaign is underway;
+- unfinished schemas, mappings, APIs, and CLI behavior may change materially;
+- public history exists so decisions and implementation can be inspected rather than reconstructed later;
+- external contribution is welcome if someone independently chooses to participate, but it is not a prerequisite for completing the first release.
+
+When a release is ready, the project will describe what actually exists, how it was tested, what compatibility it provides, and what remains experimental.
+
+## Governance and project policies
+
+The project keeps governance and contribution rules in place during pre-release development so decisions, security boundaries, and unexpected external contributions can be handled consistently.
 
 See:
 
@@ -90,11 +106,7 @@ See:
 - [Changelog](CHANGELOG.md)
 - [Citation metadata](CITATION.cff)
 
-## Contact
-
-General project contact: **meaningwire@proton.me**
-
-For security vulnerabilities, follow [SECURITY.md](SECURITY.md) rather than posting sensitive details publicly. For ordinary bugs, documentation problems, and feature proposals, use GitHub issues so discussion can benefit the project community.
+For security vulnerabilities, follow [SECURITY.md](SECURITY.md) rather than posting sensitive details publicly.
 
 ## Maturity model
 
@@ -112,15 +124,15 @@ MeaningWire is licensed under the [Apache License 2.0](LICENSE). Contributions s
 
 ## Current focus
 
-The immediate work is the public foundation and technical MVP:
+The immediate goal is a credible first usable release rather than a public idea pitch. Current work is focused on:
 
-- establish governance and contributor infrastructure;
-- define the canonical core and schema conventions;
-- define the mapping registry;
-- build validation and provenance primitives;
-- design the CLI and adapter SDK;
-- implement two representative reference adapters;
-- produce synthetic / isolated interoperability proofs;
-- document everything well enough for an outside contributor to understand and challenge it.
+- defining the canonical core and schema conventions;
+- defining the mapping registry and mapping-loss semantics;
+- implementing validation and provenance primitives;
+- building a working CLI and adapter SDK;
+- implementing representative reference adapters;
+- producing deterministic tests and synthetic / isolated interoperability proofs;
+- establishing reproducible release automation and release evidence;
+- producing a concise quickstart and enough documentation to evaluate the released software without relying on private context.
 
 MeaningWire does not claim existing adoption, customers, expert endorsement, or production readiness. Evidence and maturity will be published as they are earned.
