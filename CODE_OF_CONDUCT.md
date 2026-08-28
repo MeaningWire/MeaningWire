@@ -34,7 +34,9 @@ This code applies in project-managed spaces and when someone is acting as a repr
 
 ## Enforcement
 
-Concerns should be reported privately to the project maintainers when possible. Until a dedicated project contact address is published, use GitHub's private reporting or moderation mechanisms where available rather than posting sensitive details publicly.
+Concerns should be reported privately to the project maintainer when possible. Until a dedicated project contact address is published, use GitHub's private reporting or moderation mechanisms where available rather than posting sensitive details publicly.
+
+If no private path is available, a public issue may be used only to request private moderator contact. Do not place sensitive personal information, allegations requiring confidentiality, security details, or private evidence in that public request.
 
 Maintainers may remove content, limit participation, or block contributors when necessary to protect the project and its participants. Enforcement decisions should be proportionate, documented when appropriate, and focused on behavior rather than status or viewpoint.
 
