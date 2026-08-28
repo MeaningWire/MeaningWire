@@ -87,6 +87,8 @@ See:
 - [Security](SECURITY.md)
 - [Support](SUPPORT.md)
 - [Roadmap](ROADMAP.md)
+- [Changelog](CHANGELOG.md)
+- [Citation metadata](CITATION.cff)
 
 ## Maturity model
 
@@ -100,7 +102,7 @@ Stable public contracts will use explicit versioning and compatibility policy be
 
 ## License
 
-A project license has **not yet been finalized**. Until a license file is added, the repository should not be treated as granting open-source reuse rights. The licensing decision will be made explicitly before the first public preview release.
+MeaningWire is licensed under the [Apache License 2.0](LICENSE). Contributions submitted for inclusion in the project are provided under the same license unless explicitly agreed otherwise.
 
 ## Current focus
 
