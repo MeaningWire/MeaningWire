@@ -87,7 +87,7 @@ Until the first usable versioned release is ready:
 - no broad adoption or contributor-recruitment campaign is underway;
 - unfinished schemas, mappings, APIs, and CLI behavior may change materially;
 - public history exists so decisions and implementation can be inspected rather than reconstructed later;
-- external contribution is welcome if someone independently chooses to participate, but it is not a prerequisite for completing the first release.
+- independently offered external contributions may be reviewed under the project contribution policy, but external contribution is not a prerequisite for completing the first release.
 
 When a release is ready, the project will describe what actually exists, how it was tested, what compatibility it provides, and what remains experimental.
 
