@@ -1,0 +1,53 @@
+name: Feature or design proposal
+description: Propose an improvement to MeaningWire
+title: "[Proposal]: "
+labels: []
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or user need
+      description: Describe the interoperability problem before proposing a solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: dropdown
+    id: area
+    attributes:
+      label: Primary area
+      options:
+        - Canonical schema / semantics
+        - Mapping / transformation
+        - Adapter / connector SDK
+        - CLI / API
+        - Events
+        - Provenance / authority
+        - Documentation / accessibility
+        - Governance / community
+        - Security / supply chain
+        - Labs / research
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility and migration impact
+  - type: textarea
+    id: provenance
+    attributes:
+      label: Provenance, mapping loss, or authority impact
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence or references
+      description: Link specifications, examples, prior art, benchmarks, or research where useful.
