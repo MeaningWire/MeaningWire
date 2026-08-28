@@ -1,0 +1,11 @@
+{
+  "registry_version": "0.1.0",
+  "maturity": "EXPERIMENTAL",
+  "schemas": [
+    {"id": "urn:meaningwire:schema:core:reference:0.1.0", "path": "schemas/core/reference.schema.json", "version": "0.1.0"},
+    {"id": "urn:meaningwire:schema:core:authority:0.1.0", "path": "schemas/core/authority.schema.json", "version": "0.1.0"},
+    {"id": "urn:meaningwire:schema:core:provenance:0.1.0", "path": "schemas/core/provenance.schema.json", "version": "0.1.0"},
+    {"id": "urn:meaningwire:schema:core:envelope:0.1.0", "path": "schemas/core/envelope.schema.json", "version": "0.1.0"},
+    {"id": "urn:meaningwire:schema:mapping:definition:0.1.0", "path": "mappings/mapping.schema.json", "version": "0.1.0"}
+  ]
+}

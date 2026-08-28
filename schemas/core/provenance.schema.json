@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:meaningwire:schema:core:provenance:0.1.0",
+  "title": "MeaningWire Provenance",
+  "description": "Source identity and transformation history for canonicalized data.",
+  "x-meaningwire-contract-version": "0.1.0",
+  "x-meaningwire-maturity": "EXPERIMENTAL",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["source"],
+  "properties": {
+    "source": {"$ref": "urn:meaningwire:schema:core:reference:0.1.0"},
+    "source_version": {"type": "string", "minLength": 1},
+    "observed_at": {"type": "string", "format": "date-time"},
+    "transformations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["operation"],
+        "properties": {
+          "operation": {"type": "string", "minLength": 1},
+          "mapping": {"$ref": "urn:meaningwire:schema:core:reference:0.1.0"},
+          "performed_by": {"$ref": "urn:meaningwire:schema:core:reference:0.1.0"},
+          "performed_at": {"type": "string", "format": "date-time"},
+          "notes": {"type": "string"}
+        }
+      }
+    }
+  }
+}

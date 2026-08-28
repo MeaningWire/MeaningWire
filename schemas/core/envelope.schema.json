@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:meaningwire:schema:core:envelope:0.1.0",
+  "title": "MeaningWire Canonical Envelope",
+  "description": "Transport-neutral envelope binding canonical data to contract, provenance, authority, and maturity metadata.",
+  "x-meaningwire-contract-version": "0.1.0",
+  "x-meaningwire-maturity": "EXPERIMENTAL",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "record", "data", "provenance", "authority", "maturity"],
+  "properties": {
+    "contract": {"$ref": "urn:meaningwire:schema:core:reference:0.1.0"},
+    "record": {"$ref": "urn:meaningwire:schema:core:reference:0.1.0"},
+    "data": {"type": "object"},
+    "provenance": {"$ref": "urn:meaningwire:schema:core:provenance:0.1.0"},
+    "authority": {"$ref": "urn:meaningwire:schema:core:authority:0.1.0"},
+    "maturity": {"type": "string", "enum": ["DISCOVERED", "RESEARCH", "EVALUATED", "EXPERIMENTAL", "PREVIEW", "STABLE", "REJECTED", "SUPERSEDED", "DEPRECATED"]}
+  }
+}

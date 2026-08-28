@@ -1,0 +1,8 @@
+{
+  "contract": {"namespace": "urn:example:contract", "id": "party", "version": "0.0.1"},
+  "record": {"namespace": "urn:example:source:crm:party", "id": "C-1001"},
+  "data": {"display_name": "Example Organization"},
+  "provenance": {"source": {"namespace": "urn:example:source:crm", "id": "customer/C-1001"}},
+  "authority": {"kind": "model_inference", "approval": "approved", "confidence": 0.91, "basis": "Model predicted approval."},
+  "maturity": "EXPERIMENTAL"
+}
