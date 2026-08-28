@@ -59,7 +59,7 @@ class MeaningWireCLITests(unittest.TestCase):
                 "schema",
                 "validate",
                 "urn:meaningwire:schema:core:envelope:0.1.0",
-                str(ROOT / "tests" / "fixtures" / "invalid" / "envelope-model-approval.json"),
+                str(ROOT / "tests" / "fixtures" / "invalid" / "envelope-model-approved.json"),
                 "--json",
             ]
         )
