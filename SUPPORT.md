@@ -4,9 +4,11 @@ MeaningWire is currently an early-stage open-source project. There is no paid su
 
 ## Where to ask for help
 
-Use GitHub issues for reproducible bugs, documentation problems, and well-scoped feature requests once the relevant issue forms are available.
+Use GitHub issues for reproducible bugs, documentation problems, and well-scoped feature requests.
 
 Use RFCs for substantial semantic, architectural, compatibility, governance, or public-contract proposals.
+
+For general project contact that does not fit a public issue, email **meaningwire@proton.me**. This mailbox is not a guaranteed-response support desk.
 
 Do not use public issues for security vulnerabilities; follow [SECURITY.md](SECURITY.md).
 
