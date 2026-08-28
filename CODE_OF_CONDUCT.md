@@ -1,6 +1,6 @@
 # MeaningWire Code of Conduct
 
-MeaningWire welcomes participation from people with different backgrounds, disciplines, experience levels, and viewpoints. Technical rigor and respectful collaboration are both required.
+Anyone who participates in MeaningWire project spaces is expected to follow this code. The project is currently in pre-release development; this policy exists so interaction can be handled consistently and respectfully if participation occurs.
 
 ## Expected behavior
 
