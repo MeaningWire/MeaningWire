@@ -1,0 +1,49 @@
+name: Bug report
+description: Report a reproducible problem in MeaningWire
+title: "[Bug]: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve MeaningWire. Please remove private data and credentials before submitting.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Which release, branch, or commit are you using?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal reproduction
+      description: Provide the smallest example that reproduces the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Interoperability impact
+      description: If relevant, describe compatibility, mapping loss, provenance, or authority effects.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched for an existing issue describing this problem.
+          required: true
+        - label: This report does not contain private credentials or sensitive production data.
+          required: true

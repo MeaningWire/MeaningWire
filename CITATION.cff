@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use MeaningWire, please cite this repository and the specific release or commit you used."
+title: "MeaningWire"
+type: software
+authors:
+  - name: "MeaningWire Project"
+license: Apache-2.0
+repository-code: "https://github.com/MeaningWire/MeaningWire"
+url: "https://github.com/MeaningWire/MeaningWire"
+abstract: "Vendor-neutral semantic interoperability framework for systems, data, APIs, events, AI, and automation."
