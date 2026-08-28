@@ -81,6 +81,13 @@ class MappingRegistryTests(unittest.TestCase):
                 "0.1.0",
             )
 
+    def test_mapping_path_cannot_escape_definitions_directory(self) -> None:
+        with self.assertRaisesRegex(
+            mapping_registry.MappingRegistryError,
+            "must stay under mappings/definitions",
+        ):
+            mapping_registry.resolve_definition_path("../README.md")
+
 
 if __name__ == "__main__":
     unittest.main()
