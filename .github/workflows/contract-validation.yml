@@ -28,5 +28,10 @@ jobs:
         run: python -m pip install --disable-pip-version-check -r requirements-validation.txt
       - name: Run Draft 2020-12 validation
         run: python tools/validate_jsonschema.py
+      - name: Smoke-test read-only CLI
+        run: |
+          python tools/meaningwire.py doctor --json
+          python tools/meaningwire.py schemas list --json
+          python tools/meaningwire.py mappings list --json
       - name: Run deterministic unit tests
         run: python -m unittest discover -s tests -v
