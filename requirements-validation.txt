@@ -1,0 +1,3 @@
+# Public validation dependency used only for standards-compliant JSON Schema checks.
+# The dependency is intentionally explicit and pinned at the top level for this pre-release slice.
+jsonschema==4.26.0
