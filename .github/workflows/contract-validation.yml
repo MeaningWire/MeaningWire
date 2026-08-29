@@ -100,6 +100,7 @@ jobs:
           grep -Fq 'urn:meaningwire:schema:identity:party:0.1.0' dist/reference/schemas/index.html
           grep -Fq 'urn:meaningwire:mapping:example-crm-email:0.1.0' dist/reference/mappings/index.html
           test -f dist/pagefind/pagefind.js
+          python tools/validate_docs_links.py dist
           if ! cmp -s /tmp/meaningwire-docs-first/pagefind/pagefind-ui.css dist/pagefind/pagefind-ui.css; then
             echo "ERROR: Pagefind UI CSS differs across repeated builds." >&2
             sha256sum /tmp/meaningwire-docs-first/pagefind/pagefind-ui.css dist/pagefind/pagefind-ui.css
