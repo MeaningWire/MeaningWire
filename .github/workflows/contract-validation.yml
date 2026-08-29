@@ -46,5 +46,15 @@ jobs:
           python tools/meaningwire.py schemas list --json
           python tools/meaningwire.py mappings list --json
           python tools/meaningwire.py proof run --json
+      - name: Verify deterministic release-candidate builder
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/release_builder.py --output-dir /tmp/meaningwire-first
+          python tools/release_builder.py --output-dir /tmp/meaningwire-second
+          version="$(cat VERSION)"
+          cmp "/tmp/meaningwire-first/MeaningWire-${version}.tar.gz" "/tmp/meaningwire-second/MeaningWire-${version}.tar.gz"
+          cmp /tmp/meaningwire-first/SHA256SUMS /tmp/meaningwire-second/SHA256SUMS
+          cmp /tmp/meaningwire-first/release-evidence.json /tmp/meaningwire-second/release-evidence.json
       - name: Run deterministic unit tests
         run: python -m unittest discover -s tests -v

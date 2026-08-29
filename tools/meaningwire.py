@@ -21,6 +21,7 @@ import validate_contracts
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_REGISTRY_PATH = ROOT / "schemas" / "registry.json"
+VERSION_PATH = ROOT / "VERSION"
 DEFAULT_MAPPING_NAMESPACE = "urn:meaningwire:mapping"
 
 
@@ -31,6 +32,15 @@ class CLIError(ValueError):
 def load_json(path: Path) -> Any:
     with path.open("r", encoding="utf-8") as handle:
         return json.load(handle)
+
+
+def project_version() -> str:
+    if not VERSION_PATH.is_file():
+        raise CLIError("VERSION file is missing")
+    version = VERSION_PATH.read_text(encoding="utf-8").strip()
+    if not version:
+        raise CLIError("VERSION file is empty")
+    return version
 
 
 def add_json_flag(parser: argparse.ArgumentParser) -> None:
@@ -89,6 +99,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
     payload = {
         "status": "PASS",
+        "version": project_version(),
         "schemas": {
             "bootstrap_registered": schema_count,
             "draft_2020_12_registered": standards_schema_count,
@@ -102,6 +113,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     }
     text = (
         "PASS: MeaningWire doctor; "
+        f"version={project_version()}; "
         f"{schema_count} schemas registered; "
         f"{mapping_count} mappings registered; "
         f"{bootstrap_valid + standards_valid} validation-layer valid-fixture checks passed; "
@@ -228,11 +240,13 @@ def cmd_proof_run(args: argparse.Namespace) -> int:
     mapping = reference_text(proof["mapping"]["mapping_id"])
     payload = {
         "status": "PASS",
+        "version": project_version(),
         "proof": proof,
         "network_access": False,
     }
     text = (
         "PASS: EXPERIMENTAL synthetic interoperability proof; "
+        f"version={project_version()}; "
         f"{source_contract} -> {mapping} -> {target_contract}; "
         "target approval not asserted; network access disabled."
     )
@@ -248,7 +262,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--version",
         action="version",
-        version="MeaningWire CLI EXPERIMENTAL 0.0.1",
+        version=f"MeaningWire CLI EXPERIMENTAL {project_version()}",
     )
     commands = parser.add_subparsers(dest="command", required=True)
 
