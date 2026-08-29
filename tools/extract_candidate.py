@@ -4,14 +4,17 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any
 
 import candidate_archive_integrity
 
 PROJECT = "MeaningWire"
+_SHA64_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 class CandidateExtractionError(ValueError):
@@ -26,6 +29,13 @@ def _read_json(path: Path) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise CandidateExtractionError("release evidence root must be an object")
     return value
+
+
+def _sha256(path: Path) -> str:
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError as exc:
+        raise CandidateExtractionError(f"cannot hash candidate archive {path}: {exc}") from exc
 
 
 def _mode_map(manifest: dict[str, Any]) -> dict[str, int]:
@@ -61,6 +71,7 @@ def extract_candidate(
     version = evidence.get("version")
     source_commit = evidence.get("source_commit")
     archive_name = evidence.get("artifact")
+    archive_sha256 = evidence.get("artifact_sha256")
     manifest_sha256 = evidence.get("content_manifest_sha256")
     if not isinstance(version, str) or not version:
         raise CandidateExtractionError("release evidence version is invalid")
@@ -74,6 +85,10 @@ def extract_candidate(
         raise CandidateExtractionError(
             f"archive filename {archive.name!r} does not match release evidence {archive_name!r}"
         )
+    if not isinstance(archive_sha256, str) or not _SHA64_RE.fullmatch(archive_sha256):
+        raise CandidateExtractionError("release evidence artifact_sha256 is invalid")
+    if _sha256(archive) != archive_sha256:
+        raise CandidateExtractionError("candidate archive SHA-256 does not match release evidence")
 
     try:
         files, manifest, _validation = candidate_archive_integrity.inspect_candidate(
