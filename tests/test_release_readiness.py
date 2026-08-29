@@ -62,6 +62,28 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertTrue(report["human_boundary"]["required"])
         self.assertFalse(report["publication_performed"])
 
+    def test_verified_documentation_build_clears_launch_blocker(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            candidate_dir, commit = self._validated_candidate(Path(directory))
+            report = release_readiness.evaluate_readiness(
+                candidate_dir,
+                expected_source_commit=commit,
+                fresh_environment_verified=True,
+                documentation_build_verified=True,
+            )
+
+        self.assertEqual(report["release_threshold"]["status"], "PASS")
+        self.assertEqual(report["launch_experience"]["status"], "PASS")
+        self.assertNotIn("documentation_site_build_not_ready", report["blockers"])
+        self.assertEqual(
+            report["blockers"],
+            [
+                "governed_publication_path_not_ready",
+                "public_attestation_path_not_ready",
+            ],
+        )
+        self.assertEqual(report["overall_status"], "BLOCKED")
+
     def test_fresh_environment_proof_is_required_for_threshold(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             candidate_dir, commit = self._validated_candidate(Path(directory))

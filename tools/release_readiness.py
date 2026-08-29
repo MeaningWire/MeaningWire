@@ -230,6 +230,7 @@ def evaluate_readiness(
     *,
     expected_source_commit: str | None = None,
     fresh_environment_verified: bool = False,
+    documentation_build_verified: bool = False,
 ) -> dict[str, Any]:
     directory = Path(candidate_dir).resolve()
     release_evidence_path = directory / "release-evidence.json"
@@ -382,7 +383,15 @@ def evaluate_readiness(
     ]
     threshold_pass = all(check["status"] == "PASS" for check in threshold_checks)
 
-    docs_ready, docs_detail = _detect_documentation_site(archive_files)
+    docs_scaffold_ready, docs_scaffold_detail = _detect_documentation_site(archive_files)
+    docs_ready = docs_scaffold_ready and documentation_build_verified
+    docs_build_detail = (
+        "locked Starlight scaffold is present and caller asserts the static documentation build passed"
+        if docs_ready
+        else docs_scaffold_detail
+        if not docs_scaffold_ready
+        else "locked Starlight scaffold is present, but successful static documentation build has not been asserted"
+    )
     publication_ready, attestation_ready, publication_detail = _detect_publication_path(
         archive_files
     )
@@ -414,9 +423,13 @@ def evaluate_readiness(
         },
         "launch_experience": {
             "status": "PASS" if docs_ready else "BLOCKED",
+            "documentation_site_scaffold": {
+                "status": "PASS" if docs_scaffold_ready else "BLOCKED",
+                "detail": docs_scaffold_detail,
+            },
             "documentation_site_build": {
                 "status": "PASS" if docs_ready else "BLOCKED",
-                "detail": docs_detail,
+                "detail": docs_build_detail,
             },
         },
         "publication_capability": {
@@ -465,6 +478,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="assert that the caller runs after the isolated extracted-candidate proof",
     )
+    parser.add_argument(
+        "--documentation-build-verified",
+        action="store_true",
+        help="assert that the caller runs only after npm ci and the locked static documentation build succeed",
+    )
     parser.add_argument("--output", help="write machine-readable readiness report JSON")
     parser.add_argument(
         "--require-ready",
@@ -481,6 +499,7 @@ def main(argv: list[str] | None = None) -> int:
             args.candidate_dir,
             expected_source_commit=args.source_commit,
             fresh_environment_verified=args.fresh_environment_verified,
+            documentation_build_verified=args.documentation_build_verified,
         )
         data = _json_bytes(report)
         if args.output:
