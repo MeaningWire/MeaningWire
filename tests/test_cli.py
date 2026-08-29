@@ -26,8 +26,8 @@ class MeaningWireCLITests(unittest.TestCase):
         self.assertEqual(code, 0, stderr)
         payload = json.loads(stdout)
         self.assertEqual(payload["status"], "PASS")
-        self.assertEqual(payload["schemas"]["bootstrap_registered"], 5)
-        self.assertEqual(payload["schemas"]["draft_2020_12_registered"], 5)
+        self.assertEqual(payload["schemas"]["bootstrap_registered"], 6)
+        self.assertEqual(payload["schemas"]["draft_2020_12_registered"], 6)
         self.assertEqual(payload["mappings"]["registered"], 2)
         self.assertFalse(payload["network_access"])
 
@@ -37,7 +37,8 @@ class MeaningWireCLITests(unittest.TestCase):
         payload = json.loads(stdout)
         schema_ids = [entry["id"] for entry in payload["schemas"]]
         self.assertEqual(schema_ids, sorted(schema_ids))
-        self.assertEqual(len(schema_ids), 5)
+        self.assertEqual(len(schema_ids), 6)
+        self.assertIn("urn:meaningwire:schema:identity:party:0.1.0", schema_ids)
 
     def test_schema_validate_accepts_valid_fixture(self) -> None:
         code, stdout, stderr = self.run_cli(
