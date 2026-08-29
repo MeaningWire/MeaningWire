@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import copy
+import hashlib
+import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -32,6 +35,14 @@ class SPDXCandidateTests(unittest.TestCase):
             "source_commit": self.commit,
             "artifact": self.archive_name,
             "artifact_sha256": self.archive_sha256,
+            "sbom": {
+                "filename": f"MeaningWire-{self.version}.spdx.json",
+                "sha256": "b" * 64,
+                "validation": {
+                    "status": "PENDING",
+                    "evidence_filename": "spdx-validation-evidence.json",
+                },
+            },
         }
 
     def test_generation_is_deterministic(self) -> None:
@@ -99,6 +110,71 @@ class SPDXCandidateTests(unittest.TestCase):
                 broken,
                 self.release_evidence,
             )
+
+    def test_release_evidence_promotion_is_deterministic_and_binds_validation(self) -> None:
+        validation = validate_spdx_sbom.validation_evidence(
+            sbom_path=Path(self.release_evidence["sbom"]["filename"]),
+            sbom_sha256=self.release_evidence["sbom"]["sha256"],
+            schema_sha256="c" * 64,
+            policy={
+                "scope": "candidate archive plus governed validation dependency environment",
+                "locked_dependency_count": 6,
+                "package_count": 7,
+                "relationship_count": 6,
+            },
+        )
+        validation_bytes = validate_spdx_sbom.json_bytes(validation)
+        expected_validation_digest = hashlib.sha256(validation_bytes).hexdigest()
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            release_path = root / "release-evidence.json"
+            validation_path = root / "spdx-validation-evidence.json"
+            validate_spdx_sbom.write_json(release_path, self.release_evidence)
+            validate_spdx_sbom.write_json(validation_path, validation)
+
+            first = validate_spdx_sbom.promote_release_evidence(
+                release_path,
+                self.release_evidence,
+                validation_evidence_path=validation_path,
+                validation_evidence_bytes=validation_bytes,
+            )
+            first_bytes = release_path.read_bytes()
+            second = validate_spdx_sbom.promote_release_evidence(
+                release_path,
+                first,
+                validation_evidence_path=validation_path,
+                validation_evidence_bytes=validation_bytes,
+            )
+
+            self.assertEqual(first, second)
+            self.assertEqual(first_bytes, release_path.read_bytes())
+            promoted = json.loads(first_bytes.decode("utf-8"))
+            self.assertEqual(promoted["sbom"]["validation"]["status"], "PASS")
+            self.assertEqual(
+                promoted["sbom"]["validation"]["evidence_sha256"],
+                expected_validation_digest,
+            )
+            self.assertEqual(
+                promoted["sbom"]["validation"]["official_schema"]["git_blob_sha1"],
+                fetch_spdx_schema.SPDX_SCHEMA_BLOB_SHA1,
+            )
+
+    def test_release_evidence_promotion_rejects_unexpected_state(self) -> None:
+        broken = copy.deepcopy(self.release_evidence)
+        broken["sbom"]["validation"]["status"] = "UNKNOWN"
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with self.assertRaisesRegex(
+                validate_spdx_sbom.SPDXValidationError,
+                "unexpected SBOM validation state",
+            ):
+                validate_spdx_sbom.promote_release_evidence(
+                    root / "release-evidence.json",
+                    broken,
+                    validation_evidence_path=root / "spdx-validation-evidence.json",
+                    validation_evidence_bytes=b"{}\n",
+                )
 
     def test_upstream_schema_identity_is_pinned(self) -> None:
         self.assertEqual(
