@@ -73,15 +73,24 @@ def _archive_size(path: Path) -> int:
 
 
 def archive_sha256(archive_path: str | Path) -> str:
-    """Hash a candidate archive only after enforcing the compressed-size ceiling."""
+    """Hash a candidate archive while enforcing the compressed-size ceiling."""
 
     path = Path(archive_path)
     _archive_size(path)
     digest = hashlib.sha256()
+    hashed_bytes = 0
     try:
         with path.open("rb") as handle:
             for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                hashed_bytes += len(chunk)
+                if hashed_bytes > MAX_ARCHIVE_BYTES:
+                    raise CandidateArchiveError(
+                        "candidate archive compressed size exceeds safety limit during hashing "
+                        f"({MAX_ARCHIVE_BYTES} bytes)"
+                    )
                 digest.update(chunk)
+    except CandidateArchiveError:
+        raise
     except OSError as exc:
         raise CandidateArchiveError(f"cannot hash candidate archive: {exc}") from exc
     return digest.hexdigest()
