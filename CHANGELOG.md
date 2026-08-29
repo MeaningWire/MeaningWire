@@ -30,6 +30,7 @@ The repository currently has a prerelease candidate version identifier, but **no
 - Locked Starlight documentation source/build foundation using Node 22.19.0, npm 10.9.3, Astro 7.2.9, Starlight 0.41.10, a committed npm lockfile, static output, local Pagefind search, and exact-head CI proof of byte-identical repeated builds.
 - Initial Starlight entry pages for getting started, builders, model/research readers, integration/evaluation readers, and project-owned 404 recovery behavior without inventing a deployment URL.
 - Deterministically generated schema and mapping reference pages with CI drift detection.
+- Starlight-native generated schema and mapping reference pages derived from the same canonical registries, exposed through the documentation sidebar and verified in deterministic static output with the local Pagefind bundle.
 - Explicit pre-release compatibility and migration policy covering schemas, mappings, execution behavior, CLI, Adapter SDK, artifact/evidence formats, and documentation.
 - Evidence-first release-notes template for future versioned publication.
 - Immutable full-commit-SHA pinning for external GitHub Actions with CI enforcement against floating references.
