@@ -1,0 +1,63 @@
+name: Release candidate build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact selected ref
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install public validation dependency
+        run: python -m pip install --disable-pip-version-check -r requirements-validation.txt
+
+      - name: Validate contracts and registries
+        run: |
+          python tools/validate_contracts.py
+          python tools/mapping_registry.py
+          python tools/validate_jsonschema.py
+
+      - name: Run public CLI proof
+        run: |
+          python tools/meaningwire.py doctor --json
+          python tools/meaningwire.py proof run --json
+
+      - name: Run deterministic unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Build candidate twice from exact commit
+        run: |
+          python tools/release_builder.py --output-dir dist/first --source-commit "$GITHUB_SHA"
+          python tools/release_builder.py --output-dir dist/second --source-commit "$GITHUB_SHA"
+
+      - name: Verify byte-for-byte reproducibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(cat VERSION)"
+          cmp "dist/first/MeaningWire-${version}.tar.gz" "dist/second/MeaningWire-${version}.tar.gz"
+          cmp dist/first/SHA256SUMS dist/second/SHA256SUMS
+          cmp dist/first/release-evidence.json dist/second/release-evidence.json
+          mkdir -p dist/verified
+          cp "dist/first/MeaningWire-${version}.tar.gz" dist/verified/
+          cp dist/first/SHA256SUMS dist/verified/
+          cp dist/first/release-evidence.json dist/verified/
+
+      - name: Retain verified candidate evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: meaningwire-release-candidate-${{ github.sha }}
+          path: dist/verified/
+          if-no-files-found: error
+          retention-days: 14
