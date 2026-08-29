@@ -14,11 +14,19 @@ Human-readable version comments remain beside the SHA so reviewers can see which
 
 Current pins:
 
-| Action | Reviewed release | Immutable commit |
-| --- | --- | --- |
-| `actions/checkout` | `v4.4.0` | `11d5960a326750d5838078e36cf38b85af677262` |
-| `actions/setup-python` | `v5.6.0` | `a26af69be951a213d495a4c3e4e4022e16d87065` |
-| `actions/upload-artifact` | `v4.6.2` | `ea165f8d65b6e75b540449e92b4886f43607fa02` |
+| Action | Reviewed release | Immutable commit | Runtime |
+| --- | --- | --- | --- |
+| `actions/checkout` | `v7.0.1` | `3d3c42e5aac5ba805825da76410c181273ba90b1` | Node 24 |
+| `actions/setup-python` | `v7.0.0` | `5fda3b95a4ea91299a34e894583c3862153e4b97` | Node 24 |
+| `actions/upload-artifact` | `v7.0.1` | `043fb46d1a93c77aae656e7c1c64a875d1fc6a0a` | Node 24 |
+
+These pins were selected from the official upstream release tags and verified against each action's committed `action.yml`. The update replaces older pins whose action metadata targeted Node 20 and which GitHub-hosted runners were already forcibly executing under Node 24 with deprecation warnings. MeaningWire prefers reviewed actions that natively declare the current runner runtime instead of relying on a platform compatibility override.
+
+The v7 changes were reviewed before adoption. For MeaningWire's current usage:
+
+- checkout v7's stricter handling of trusted-context fork-PR checkout is compatible with the normal `pull_request`/`push` workflow and strengthens an unused risky boundary;
+- setup-python v7 removes the `pip-install` input, which MeaningWire does not use, and retains the `python-version` input used by the workflows;
+- upload-artifact v7 adds optional direct single-file upload behavior, while MeaningWire continues using the normal archived directory upload path.
 
 `tools/validate_workflow_pins.py` scans `.github/workflows/*.yml` and `.yaml` and fails CI if an external `uses:` reference is not pinned to a full commit SHA.
 
@@ -27,10 +35,11 @@ A future action update should:
 1. identify the intended upstream version from the action's official repository;
 2. resolve that version tag to its exact commit SHA;
 3. review release notes and breaking/runtime requirements;
-4. replace the SHA and adjacent version comment together;
-5. require the normal MeaningWire exact-head CI and PR review before merge.
+4. inspect the pinned action metadata when runtime generation is relevant;
+5. replace the SHA and adjacent version comment together;
+6. require the normal MeaningWire exact-head CI and PR review before merge.
 
-A floating major tag such as `actions/checkout@v4` is not acceptable.
+A floating major tag such as `actions/checkout@v7` is not acceptable.
 
 ## Validation dependency lock
 
