@@ -26,6 +26,8 @@ jobs:
         run: python tools/mapping_registry.py
       - name: Smoke-test mapping execution foundation
         run: python tools/mapping_executor.py
+      - name: Smoke-test deterministic mapping application
+        run: python tools/mapping_application.py
       - name: Smoke-test Adapter SDK boundary
         run: python tools/adapter_sdk.py
       - name: Smoke-test JSON object reference adapter
