@@ -84,10 +84,14 @@ jobs:
           test -f dist/index.html
           test -f dist/how-it-works/index.html
           test -f dist/accessibility/index.html
+          test -f dist/standards-crosswalk/index.html
           test -f dist/reference/schemas/index.html
           test -f dist/reference/mappings/index.html
           grep -Fq 'Approval is not transferred.' dist/how-it-works/index.html
           grep -Fq 'does not currently claim WCAG 2.2 AA conformance.' dist/accessibility/index.html
+          grep -Fq 'NORMATIVE FOR MEANINGWIRE' dist/standards-crosswalk/index.html
+          grep -Fq 'A standards citation is not a mapping.' dist/standards-crosswalk/index.html
+          grep -Fq 'Approval is not transferred.' dist/standards-crosswalk/index.html
           grep -Fq 'urn:meaningwire:schema:identity:party:0.1.0' dist/reference/schemas/index.html
           grep -Fq 'urn:meaningwire:mapping:example-crm-email:0.1.0' dist/reference/mappings/index.html
           test -f dist/pagefind/pagefind.js
@@ -97,10 +101,14 @@ jobs:
           test -f dist/index.html
           test -f dist/how-it-works/index.html
           test -f dist/accessibility/index.html
+          test -f dist/standards-crosswalk/index.html
           test -f dist/reference/schemas/index.html
           test -f dist/reference/mappings/index.html
           grep -Fq 'Approval is not transferred.' dist/how-it-works/index.html
           grep -Fq 'does not currently claim WCAG 2.2 AA conformance.' dist/accessibility/index.html
+          grep -Fq 'NORMATIVE FOR MEANINGWIRE' dist/standards-crosswalk/index.html
+          grep -Fq 'A standards citation is not a mapping.' dist/standards-crosswalk/index.html
+          grep -Fq 'Approval is not transferred.' dist/standards-crosswalk/index.html
           grep -Fq 'urn:meaningwire:schema:identity:party:0.1.0' dist/reference/schemas/index.html
           grep -Fq 'urn:meaningwire:mapping:example-crm-email:0.1.0' dist/reference/mappings/index.html
           test -f dist/pagefind/pagefind.js
@@ -118,7 +126,7 @@ jobs:
             echo "ERROR: documentation output contains a symbolic link" >&2
             exit 1
           fi
-          echo "PASS: walkthrough, accessibility evidence, generated references, and Pagefind bundle exist in byte-identical Starlight output."
+          echo "PASS: walkthrough, accessibility evidence, standards crosswalk, generated references, and Pagefind bundle exist in byte-identical Starlight output."
       - name: Build candidate twice from exact commit
         shell: bash
         run: |
