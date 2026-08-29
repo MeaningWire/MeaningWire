@@ -22,6 +22,8 @@ jobs:
           python-version: "3.12"
       - name: Verify immutable workflow action pins
         run: python tools/validate_workflow_pins.py
+      - name: Verify validation dependency lock structure
+        run: python tools/validate_dependency_lock.py
       - name: Run dependency-free bootstrap validation
         run: python tools/validate_contracts.py
       - name: Validate mapping registry integrity
@@ -40,8 +42,12 @@ jobs:
         run: python adapters/reference/json_lines.py tests/fixtures/adapters/json-lines-records.jsonl
       - name: Run synthetic end-to-end interoperability proof
         run: python tools/interoperability_pipeline.py
-      - name: Install public standards validator dependency
-        run: python -m pip install --disable-pip-version-check -r requirements-validation.txt
+      - name: Install locked public standards validation environment
+        run: python -m pip install --disable-pip-version-check --require-hashes --only-binary=:all: -r requirements-validation.lock
+      - name: Verify locked validation environment
+        run: |
+          python -m pip check
+          python tools/validate_dependency_lock.py --verify-installed
       - name: Run Draft 2020-12 validation
         run: python tools/validate_jsonschema.py
       - name: Smoke-test CLI
@@ -60,7 +66,7 @@ jobs:
           cmp "/tmp/meaningwire-first/MeaningWire-${version}.tar.gz" "/tmp/meaningwire-second/MeaningWire-${version}.tar.gz"
           cmp /tmp/meaningwire-first/SHA256SUMS /tmp/meaningwire-second/SHA256SUMS
           cmp /tmp/meaningwire-first/release-evidence.json /tmp/meaningwire-second/release-evidence.json
-      - name: Verify extracted candidate in isolated environment
+      - name: Verify extracted candidate in isolated locked environment
         shell: bash
         run: |
           set -euo pipefail
@@ -74,10 +80,12 @@ jobs:
           mkdir -p /tmp/meaningwire-extracted
           tar -xzf "$candidate" -C /tmp/meaningwire-extracted
           python -m venv /tmp/meaningwire-venv
-          /tmp/meaningwire-venv/bin/python -m pip install --disable-pip-version-check -r "/tmp/meaningwire-extracted/MeaningWire-${version}/requirements-validation.txt"
+          /tmp/meaningwire-venv/bin/python -m pip install --disable-pip-version-check --require-hashes --only-binary=:all: -r "/tmp/meaningwire-extracted/MeaningWire-${version}/requirements-validation.lock"
           (
             cd "/tmp/meaningwire-extracted/MeaningWire-${version}"
             export PYTHONNOUSERSITE=1
+            /tmp/meaningwire-venv/bin/python -m pip check
+            /tmp/meaningwire-venv/bin/python tools/validate_dependency_lock.py --verify-installed
             /tmp/meaningwire-venv/bin/python tools/meaningwire.py doctor --json
             /tmp/meaningwire-venv/bin/python tools/meaningwire.py proof run --json
             /tmp/meaningwire-venv/bin/python tools/meaningwire.py schema validate \
