@@ -1,6 +1,6 @@
 # Documentation Build Foundation
 
-Status: **PRE-DEPLOYMENT / REQUIRES EXACT-HEAD CI**
+Status: **PRE-DEPLOYMENT / BUILD CONTRACT PROVEN IN CI**
 
 MeaningWire's documentation source is built as a static Starlight site from the public repository. This foundation exists to make the first release experience reproducible before any hosting or deployment decision is made.
 
@@ -18,21 +18,23 @@ Node `22.19.0` is intentionally above Astro's framework minimum because the reso
 
 ## Build contract
 
-Governed CI must:
+Governed CI:
 
-1. check out the exact source commit;
-2. select the Node version from `.node-version`;
-3. install dependencies with `npm ci` from the committed lockfile;
-4. run `npm run docs:build`;
-5. confirm a static `dist/index.html` exists;
-6. retain the first static output tree temporarily;
-7. rebuild from the same exact source and locked dependency graph;
-8. compare the complete output trees byte-for-byte; and
-9. reject symbolic links in the generated static output.
+1. checks out the exact source commit;
+2. selects the Node version from `.node-version`;
+3. installs dependencies with `npm ci` from the committed lockfile;
+4. runs `npm run docs:build`;
+5. confirms a static `dist/index.html` exists;
+6. retains the first static output tree temporarily;
+7. rebuilds from the same exact source and locked dependency graph;
+8. compares the complete output trees byte-for-byte; and
+9. rejects symbolic links in the generated static output.
 
 Only after those steps succeed may the workflow pass `--documentation-build-verified` to the release-readiness evaluator.
 
 A committed `package.json`, lockfile, and Astro configuration are therefore necessary but not sufficient evidence of launch readiness.
+
+The initial exact-head implementation proof demonstrated two byte-identical complete static output trees under Node `22.19.0` / npm `10.9.3`. The same proof remains part of normal exact-head CI, so later source or dependency changes must re-establish it rather than inheriting an old result.
 
 ## Information architecture
 
@@ -43,7 +45,7 @@ The initial source provides four deliberately small entry paths:
 - researcher & model;
 - integration & evaluation.
 
-The home page states the quiet pre-release boundary and does not present the project as stable, production-ready, or already launched.
+The home page states the quiet pre-release boundary and does not present the project as stable, production-ready, or already launched. A project-owned 404 page provides a deliberate recovery path without expanding the primary navigation.
 
 ## Accessibility and dependency boundaries
 
@@ -60,6 +62,12 @@ The initial customization is intentionally restrained:
 - no proprietary build service.
 
 These controls support the project's WCAG 2.2 AA target but do not themselves constitute an accessibility-conformance claim. Accessibility testing remains required as the site grows.
+
+## Search and sitemap behavior
+
+Starlight's local Pagefind search is built into the static output and requires no hosted search service.
+
+Starlight also wires Astro's sitemap integration. During pre-deployment builds, MeaningWire intentionally does not set a canonical Astro `site` URL because no public documentation host or domain has been selected. Astro therefore skips sitemap generation. A real canonical site URL and sitemap belong to the separately governed deployment configuration rather than being fabricated to silence a build warning.
 
 ## Deployment boundary
 
