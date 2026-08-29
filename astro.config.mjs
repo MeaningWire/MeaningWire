@@ -33,7 +33,10 @@ export default defineConfig({
         },
         {
           label: 'Understand',
-          items: [{ label: 'Researcher & model', slug: 'researcher-model' }],
+          items: [
+            { label: 'Researcher & model', slug: 'researcher-model' },
+            { label: 'Standards crosswalk', slug: 'standards-crosswalk' },
+          ],
         },
         {
           label: 'Reference',

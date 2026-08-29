@@ -96,6 +96,9 @@ Current evidence already includes:
 - exact-head CI proof that both generated reference routes render canonical registry identifiers and remain byte-identical across repeated complete static builds;
 - a worked synthetic architecture walkthrough covering read-only adapter input, source envelope construction, explicit deterministic mapping, target envelope construction, transformation provenance, and the non-transfer of source approval/authority;
 - fail-closed documentation-build diagnostics that preserve the complete byte-identical-output requirement while emitting Pagefind UI CSS hashes and an exact diff if that asset ever diverges across repeated builds;
+- dependency-free rendered documentation integrity/accessibility checks for document language, metadata, duplicate titles, main/heading structure, working named skip targets, image alt presence, autoplay media, remote HTML/CSS subresources, and invalid internal links;
+- a public accessibility evidence page that targets WCAG 2.2 AA while explicitly separating static automated evidence from keyboard, browser, assistive-technology, contrast, zoom/reflow, and formal conformance testing that has not been claimed;
+- an evidence-backed standards crosswalk that distinguishes the current normative JSON Schema Draft 2020-12 dependency from informative standards references and comparative models, and explicitly rejects unsupported equivalence, certification, affiliation, endorsement, compatibility, or authority-transfer claims;
 - an explicit pre-release compatibility policy that classifies additive, corrective, breaking, security-sensitive, and internal-only changes across named compatibility surfaces;
 - migration-note requirements for breaking changes and an evidence-first release-note template for future versioned publication;
 - a reconciled unreleased changelog that distinguishes candidate builds from published releases;
@@ -116,7 +119,7 @@ Remaining Phase 4 work includes:
 
 - accessibility review and hardening toward the WCAG 2.2 AA target without claiming formal conformance before sufficient testing;
 - deepen the beginner, builder, researcher/model, and integration/evaluation paths as the public surface grows;
-- standards crosswalk documentation;
+- maintain and deepen the evidence-backed standards crosswalk as implemented mappings or reference coverage grow;
 - evaluate and prove an eventual SPDX 3 migration path without weakening current deterministic SBOM verification;
 - implement the separately governed manual publication workflow with fail-closed readiness enforcement;
 - implement release-only build/SBOM attestations and documented public verification inside that publication boundary;
