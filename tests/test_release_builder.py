@@ -35,14 +35,33 @@ class ReleaseBuilderTests(unittest.TestCase):
             first_bytes = first["archive"].read_bytes()
             second_bytes = second["archive"].read_bytes()
             self.assertEqual(first_bytes, second_bytes)
+            self.assertEqual(first["sbom"].read_bytes(), second["sbom"].read_bytes())
             self.assertEqual(first["checksums"].read_bytes(), second["checksums"].read_bytes())
             self.assertEqual(first["evidence"].read_bytes(), second["evidence"].read_bytes())
 
-            digest = hashlib.sha256(first_bytes).hexdigest()
-            self.assertEqual(first["evidence_data"]["artifact_sha256"], digest)
+            archive_digest = hashlib.sha256(first_bytes).hexdigest()
+            sbom_digest = hashlib.sha256(first["sbom"].read_bytes()).hexdigest()
+            self.assertEqual(first["evidence_data"]["artifact_sha256"], archive_digest)
+            self.assertEqual(first["evidence_data"]["sbom"]["sha256"], sbom_digest)
+            self.assertEqual(first["evidence_data"]["sbom"]["validation"]["status"], "PENDING")
             self.assertEqual(
                 first["checksums"].read_text(encoding="utf-8"),
-                f"{digest}  MeaningWire-{version}.tar.gz\n",
+                "".join(
+                    [
+                        f"{archive_digest}  MeaningWire-{version}.tar.gz\n",
+                        f"{sbom_digest}  MeaningWire-{version}.spdx.json\n",
+                    ]
+                ),
+            )
+
+            root_package = next(
+                package
+                for package in first["sbom_document"]["packages"]
+                if package["SPDXID"] == "SPDXRef-Package-MeaningWire"
+            )
+            self.assertEqual(
+                root_package["checksums"],
+                [{"algorithm": "SHA256", "checksumValue": archive_digest}],
             )
 
     def test_archive_contains_normalized_manifest_and_public_source(self) -> None:
@@ -93,6 +112,9 @@ class ReleaseBuilderTests(unittest.TestCase):
                 "tools/meaningwire.py",
                 "tools/release_builder.py",
                 "tools/validate_dependency_lock.py",
+                "tools/generate_spdx_sbom.py",
+                "tools/fetch_spdx_schema.py",
+                "tools/validate_spdx_sbom.py",
                 "schemas/registry.json",
                 "mappings/registry.json",
                 "tests/fixtures/proofs/json-object-crm-email-target.json",

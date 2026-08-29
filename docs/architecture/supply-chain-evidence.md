@@ -4,7 +4,7 @@ Status: **ACCEPTED FOR PREVIEW HARDENING; PUBLIC ATTESTATION NOT YET ENABLED**
 
 MeaningWire should make release integrity independently inspectable without introducing long-lived signing secrets, floating workflow dependencies, or premature public attestation records during quiet pre-release development.
 
-This document records the current supply-chain direction. It does not publish a release, generate a public attestation, create a signing key, or claim a SLSA level.
+This document records the current supply-chain direction. It does not publish a release, generate a public cryptographic attestation, create a signing key, or claim a SLSA level.
 
 ## Immediate control: immutable GitHub Actions pins
 
@@ -30,7 +30,7 @@ A future action update should:
 4. replace the SHA and adjacent version comment together;
 5. require the normal MeaningWire exact-head CI and PR review before merge.
 
-A floating major tag such as `actions/checkout@v4` is not acceptable after this control is merged.
+A floating major tag such as `actions/checkout@v4` is not acceptable.
 
 ## Validation dependency lock
 
@@ -48,7 +48,7 @@ The current lock resolves the `jsonschema==4.26.0` input into six packages:
 - `rpds-py==2026.6.3`;
 - `typing-extensions==4.16.0`.
 
-Each locked package has an accepted wheel SHA-256. The target is deliberately narrow because `rpds-py` uses platform-specific binary wheels. The current lock is evidence for the tested GitHub-hosted Linux x86-64 candidate environment; it is not a claim that the same wheel digest applies to macOS, Windows, Linux ARM64, or another interpreter generation.
+Each locked package has an accepted wheel SHA-256. The target is deliberately narrow because `rpds-py` uses platform-specific binary wheels. The lock is evidence for the tested GitHub-hosted Linux x86-64 candidate environment; it is not a claim that the same wheel digest applies to macOS, Windows, Linux ARM64, or another interpreter generation.
 
 Governed CI installs the lock with:
 
@@ -69,41 +69,87 @@ When the direct validation requirement is intentionally upgraded, the dependency
 
 ## SBOM direction
 
-MeaningWire intends to publish a machine-readable Software Bill of Materials with a future public release.
+MeaningWire intends to publish a machine-readable Software Bill of Materials with a future public release and now generates SBOM evidence during candidate verification.
 
-### Preferred standards direction
+### Strategic format direction
 
-**SPDX 3** is the preferred strategic SBOM family for MeaningWire once an implementation toolchain is proven end to end.
+**SPDX 3** remains the preferred strategic SBOM family once an implementation toolchain is proven end to end.
 
-Reasons:
+MeaningWire does not label current evidence as SPDX 3 merely because the newer specification exists. Generator, validator, attestation, and consumer interoperability must be proven together.
 
-- SPDX is an ISO/IEC standard and the SPDX project lists version 3.0 as its current specification generation;
-- the in-toto Attestation Framework now includes a vetted SPDX 3 predicate (`https://spdx.dev/Document/v3`);
-- SPDX is directly aligned with software-component, licensing, dependency, and provenance use cases relevant to a public open-source release.
+CycloneDX remains a relevant interoperability format to evaluate. Format selection should be driven by reliable end-to-end evidence rather than novelty.
 
-CycloneDX remains a supported interoperability format worth testing. CycloneDX 1.7 is the current published specification as of this decision, while CycloneDX 2.0 has been announced for later in 2026. MeaningWire should avoid adopting a format solely because it is newer; the deciding factor is end-to-end generator, validator, attestation, and consumer interoperability.
+### Current transitional candidate implementation
 
-### SBOM implementation gate
+The current candidate process emits **SPDX 2.3 JSON** as an explicitly transitional format.
 
-The governed validation environment now has a fully resolved target-specific lock with exact versions and accepted artifact hashes. That clears the dependency-inventory prerequisite that previously blocked useful SBOM work for this slice.
+Its declared scope is intentionally narrow:
 
-SBOM generation still should not be enabled merely to check a roadmap box. Before an SBOM becomes release evidence, the implementation should prove:
+- the exact MeaningWire candidate archive; and
+- the complete target-specific validation environment represented by `requirements-validation.lock`.
 
-1. the SBOM scope is explicit—e.g. release source/artifact contents, validation runtime dependencies, or both;
-2. the SBOM generator is itself pinned and auditable;
-3. the exact SBOM specification version is explicit;
-4. the generated document validates against that specification;
-5. repeated generation from the same candidate inputs has understood determinism properties;
-6. the SBOM is bound to the exact release artifact digest through the release/attestation process;
-7. consumers can verify the result using documented public tooling.
+It does not claim to inventory the host operating system, runner internals, Git, interpreter implementation files, transient system libraries, or untested platforms.
 
-A transitional SPDX 2.3 SBOM is acceptable only if current generator or attestation interoperability requires it and the release notes say so explicitly. It must not be mislabeled as SPDX 3.
+The root MeaningWire SPDX package is bound to the exact candidate archive SHA-256. Each locked dependency records its exact package version, accepted target wheel SHA-256, and PyPI package URL.
+
+The SBOM is generated deterministically by `tools/generate_spdx_sbom.py`. Its creation timestamp is derived from the exact source Git commit rather than wall-clock build time, and the SPDX document namespace binds the candidate version and source commit.
+
+### Official schema identity and validation
+
+MeaningWire does not vendor the upstream SPDX 2.3 JSON Schema into the Apache-2.0 repository.
+
+Candidate validation fetches the official schema from this immutable SPDX source identity:
+
+```text
+repository: spdx/spdx-spec
+commit: 44ab76293754df4af5af700fd4abd5453b866c86
+path: schemas/spdx-schema.json
+Git blob SHA-1: 0ca1c7b56bebb10fb637285698e401342b4910d6
+upstream license: CC-BY-3.0
+```
+
+`tools/fetch_spdx_schema.py` recomputes the downloaded file's Git blob object identifier and fails closed if the bytes do not match the pinned blob. The schema is then used locally for SPDX 2.3 JSON Schema validation and is not retained as a MeaningWire candidate artifact.
+
+Passing the official schema is necessary but not sufficient. `tools/validate_spdx_sbom.py` additionally verifies MeaningWire's declared package scope, candidate digest, root license, exact locked package set, package hashes, purls, and dependency relationships.
+
+### Validation evidence lifecycle
+
+Fresh candidate generation records SBOM validation as `PENDING` in `release-evidence.json`.
+
+After both official SPDX schema validation and MeaningWire policy validation pass, CI creates `spdx-validation-evidence.json` and promotes the release-evidence state to `PASS`. The promoted evidence records the validation-evidence SHA-256 and exact upstream SPDX schema identity used.
+
+The candidate builder runs twice. CI requires byte-identical:
+
+- candidate archive;
+- SPDX document;
+- `SHA256SUMS`;
+- SBOM validation evidence; and
+- promoted release evidence.
+
+`SHA256SUMS` covers the candidate archive and the SPDX document. The validation-evidence digest is bound inside the promoted release evidence because that file is produced only after schema validation succeeds.
+
+See [`../releases/candidate-sbom.md`](../releases/candidate-sbom.md) for the public verification contract and explicit non-claims.
+
+### Why this remains transitional
+
+The current implementation satisfies a useful candidate-evidence need without claiming that SPDX 2.3 is the project's permanent format.
+
+Before migrating candidate or release evidence to SPDX 3, MeaningWire should prove:
+
+1. a suitable generator is pinned and auditable;
+2. the exact SPDX 3 specification version is explicit;
+3. generated output validates against the selected specification;
+4. repeated generation has understood determinism properties;
+5. the SBOM can be bound to the exact release artifact digest through the selected attestation path;
+6. consumers can verify the result using documented public tooling.
+
+The transition should be treated as an evidence-format compatibility change and documented accordingly.
 
 ## Provenance direction
 
 SLSA 1.2 is the current SLSA specification generation at this research checkpoint.
 
-MeaningWire's existing release evidence already records exact source commit and artifact digests, but that file is project-generated evidence rather than a cryptographically signed third-party attestation.
+MeaningWire's existing release evidence records exact source commit and artifact digests, but that file is project-generated evidence rather than a cryptographically signed third-party attestation.
 
 For a future public release, the preferred next layer is a standard SLSA build-provenance attestation bound to the published artifact digest.
 
@@ -111,22 +157,16 @@ MeaningWire does **not** currently claim SLSA Build Level 1, 2, 3, or any other 
 
 ## Attestation and signing direction
 
-GitHub's current consolidated `actions/attest` action supports:
+GitHub's current consolidated `actions/attest` action supports build provenance, SBOM attestations, and custom attestation predicates. MeaningWire should use the current supported consolidated path rather than introduce deprecated attestation actions.
 
-- automatically generated build provenance;
-- SBOM attestations from SPDX or CycloneDX JSON;
-- custom attestation predicates.
+GitHub artifact attestations use Sigstore. For public repositories, signing events use public infrastructure with publicly readable transparency evidence.
 
-The older `actions/attest-sbom` action is deprecated in favor of `actions/attest` and should not be introduced into MeaningWire.
-
-GitHub artifact attestations use Sigstore. For public repositories, GitHub uses the Sigstore Public Good Instance and the resulting signing event is associated with a publicly readable transparency log.
-
-That public transparency property is desirable for an actual public release, but it also means creating an attestation is more consequential than producing an ephemeral internal candidate artifact.
+That public transparency property is desirable for an actual public release, but it also makes attestation more consequential than producing a non-published candidate artifact.
 
 Therefore:
 
 - the quiet pre-release candidate workflow does **not** request `id-token: write` or `attestations: write`;
-- it does **not** invoke `actions/attest`;
+- it does **not** invoke a public artifact-attestation action;
 - it does **not** create a public Sigstore transparency-log entry;
 - enabling public artifact/SBOM attestations belongs to the separately governed publication path.
 
@@ -144,7 +184,7 @@ The project deliberately separates two stages.
 
 ### Quiet pre-release candidate evidence
 
-Current candidate evidence may include:
+Current candidate evidence includes or may include:
 
 - exact source commit;
 - deterministic archive;
@@ -154,6 +194,9 @@ Current candidate evidence may include:
 - repeated-build byte comparison;
 - isolated extracted-candidate execution;
 - exact hashed validation dependency environment for the tested target;
+- deterministic transitional SPDX 2.3 candidate SBOM;
+- validation against an immutable official SPDX 2.3 schema identity;
+- deterministic SBOM validation evidence;
 - CI run identity;
 - immutable workflow action pins.
 
@@ -163,18 +206,18 @@ These checks do not create a public release or external cryptographic attestatio
 
 Subject to release authorization and completed implementation, a public release should add:
 
-- validated SBOM in an explicitly named specification/version;
+- the governed validated SBOM associated with the published artifact;
 - build-provenance attestation bound to the release artifact digest;
 - SBOM attestation bound to the same artifact;
 - keyless Sigstore/GitHub identity evidence;
-- documented verification commands;
+- documented public verification commands;
 - release notes containing exact artifact and evidence references.
 
 ## Verification-first rule
 
-An attestation is useful only if consumers can verify it and understand what policy it proves.
+An SBOM or attestation is useful only if consumers can verify it and understand what policy it proves.
 
-MeaningWire should not present an attestation as proof that software is secure. It proves facts about provenance/integrity and signing identity; consumers still need to evaluate the source, workflow, dependencies, tests, and policy.
+MeaningWire should not present an SBOM, signature, or attestation as proof that software is secure. These mechanisms establish bounded inventory, provenance, integrity, or signing identity; consumers still need to evaluate source, workflows, dependencies, tests, vulnerabilities, and policy.
 
 The public release documentation must include a verification procedure rather than merely displaying a supply-chain badge.
 
@@ -183,6 +226,7 @@ The public release documentation must include a verification procedure rather th
 Research checkpoint references:
 
 - SPDX specifications: https://spdx.dev/use/specifications/
+- SPDX specification repository: https://github.com/spdx/spdx-spec
 - CycloneDX specification overview: https://cyclonedx.org/specification/overview/
 - SLSA specification/provenance: https://slsa.dev/spec/
 - in-toto vetted predicates: https://github.com/in-toto/attestation/tree/main/spec/predicates

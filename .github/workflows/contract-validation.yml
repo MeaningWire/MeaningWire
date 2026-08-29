@@ -12,7 +12,7 @@ permissions:
 jobs:
   contracts:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - name: Check out repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -57,15 +57,37 @@ jobs:
           python tools/meaningwire.py schemas list --json
           python tools/meaningwire.py mappings list --json
           python tools/meaningwire.py proof run --json
-      - name: Verify deterministic release-candidate builder
+      - name: Build candidate twice from exact commit
         shell: bash
         run: |
           set -euo pipefail
-          python tools/release_builder.py --output-dir /tmp/meaningwire-first
-          python tools/release_builder.py --output-dir /tmp/meaningwire-second
+          python tools/release_builder.py --output-dir /tmp/meaningwire-first --source-commit "$GITHUB_SHA"
+          python tools/release_builder.py --output-dir /tmp/meaningwire-second --source-commit "$GITHUB_SHA"
+      - name: Fetch and verify exact official SPDX 2.3 schema
+        run: >-
+          python tools/fetch_spdx_schema.py --output /tmp/spdx-2.3-schema.json
+      - name: Validate both candidate SBOMs and promote release evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(cat VERSION)"
+          for candidate_dir in /tmp/meaningwire-first /tmp/meaningwire-second; do
+            python tools/validate_spdx_sbom.py \
+              "${candidate_dir}/MeaningWire-${version}.spdx.json" \
+              --schema /tmp/spdx-2.3-schema.json \
+              --release-evidence "${candidate_dir}/release-evidence.json" \
+              --output-evidence "${candidate_dir}/spdx-validation-evidence.json" \
+              --update-release-evidence
+          done
+      - name: Verify deterministic candidate evidence
+        shell: bash
+        run: |
+          set -euo pipefail
           version="$(cat VERSION)"
           cmp "/tmp/meaningwire-first/MeaningWire-${version}.tar.gz" "/tmp/meaningwire-second/MeaningWire-${version}.tar.gz"
+          cmp "/tmp/meaningwire-first/MeaningWire-${version}.spdx.json" "/tmp/meaningwire-second/MeaningWire-${version}.spdx.json"
           cmp /tmp/meaningwire-first/SHA256SUMS /tmp/meaningwire-second/SHA256SUMS
+          cmp /tmp/meaningwire-first/spdx-validation-evidence.json /tmp/meaningwire-second/spdx-validation-evidence.json
           cmp /tmp/meaningwire-first/release-evidence.json /tmp/meaningwire-second/release-evidence.json
       - name: Verify extracted candidate in isolated locked environment
         shell: bash

@@ -30,16 +30,28 @@ The repository currently has a prerelease candidate version identifier, but **no
 - Deterministically generated schema and mapping reference pages with CI drift detection.
 - Explicit pre-release compatibility and migration policy covering schemas, mappings, execution behavior, CLI, Adapter SDK, artifact/evidence formats, and documentation.
 - Evidence-first release-notes template for future versioned publication.
+- Immutable full-commit-SHA pinning for external GitHub Actions with CI enforcement against floating references.
+- Fully resolved, exact-version, SHA-256-hashed validation dependency lock for the governed CPython 3.12 / Linux x86-64 candidate environment.
+- Deterministic transitional SPDX 2.3 candidate SBOM covering the candidate archive plus the exact governed validation dependency set.
+- Immutable upstream SPDX 2.3 JSON Schema identity verification using the exact SPDX source commit and Git blob object.
+- SBOM validation against both the official SPDX 2.3 schema and MeaningWire-specific package-scope, digest, license, purl, and relationship policy.
+- Deterministic `spdx-validation-evidence.json` and release-evidence promotion from SBOM validation `PENDING` to `PASS` only after successful validation.
+- Candidate SBOM verification documentation with explicit inventory boundaries and non-claims.
 
 ### Changed
 
 - Phase 3 Technical MVP is recorded as complete at its experimental baseline; primary work has moved into Phase 4 documentation, release experience, evidence, and hardening.
 - Release terminology now distinguishes a **candidate version/build** from a **published public release**.
 - Pre-1.0 compatibility policy permits breaking changes during alpha while requiring explicit classification, migration guidance, evidence updates, and versioned release notes before publication.
+- Governed validation dependencies are installed fail-closed with exact hashes and binary-only artifacts for the tested candidate target.
+- Candidate `SHA256SUMS` now covers both the candidate archive and its transitional SPDX document.
+- Release notes now require explicit SBOM format, scope, digest, validation evidence, and supply-chain non-claims when an SBOM is published.
 
 ### Security
 
 - Private security and conduct reporting paths are documented without requiring public disclosure of sensitive information.
 - Release-candidate automation uses read-only repository permissions and performs no release publication.
+- External workflow actions are immutable by commit identity rather than floating version tags.
+- Public cryptographic artifact/SBOM attestations remain disabled during quiet pre-release candidate work; no signing key, OIDC attestation permission, Sigstore transparency-log entry, or public release is created by the current candidate process.
 
 No stable or public preview release has been published yet. Items remain under `Unreleased` until an explicitly authorized versioned release is actually published.
