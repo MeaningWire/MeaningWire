@@ -49,7 +49,7 @@ class AccessibilityParser(HTMLParser):
         self.evidence = PageEvidence()
         self._in_title = False
         self._title_parts: list[str] = []
-        self._in_main = 0
+        self._in_main = False
         self._seen_main = False
         self._active_pre_main_link: dict[str, str] | None = None
 
@@ -67,10 +67,8 @@ class AccessibilityParser(HTMLParser):
 
         if tag == "main":
             self.evidence.main_count += 1
-            self._in_main += 1
+            self._in_main = True
             self._seen_main = True
-        elif self._in_main:
-            self._in_main += 1
 
         if self._in_main:
             element_id = attributes.get("id", "").strip()
@@ -127,8 +125,8 @@ class AccessibilityParser(HTMLParser):
             self._title_parts = []
         if tag == "a":
             self._active_pre_main_link = None
-        if self._in_main:
-            self._in_main -= 1
+        if tag == "main":
+            self._in_main = False
 
     def handle_data(self, data: str) -> None:
         if self._in_title:
