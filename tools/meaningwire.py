@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Pre-release read-only CLI foundation for MeaningWire.
+"""Pre-release inspection, validation, and pinned-proof CLI for MeaningWire.
 
-The CLI exposes public repository state and validation behavior. It does not
-execute mappings, convert data, contact remote services, or imply stable API
-compatibility.
+The CLI exposes public repository state, standards validation behavior, and one
+repository-local synthetic interoperability proof. It does not perform arbitrary
+conversion, implicit mapping selection, remote access, write-back, or imply
+stable API compatibility.
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import interoperability_pipeline
 import mapping_registry
 import validate_contracts
 
@@ -217,10 +219,31 @@ def cmd_mappings_inspect(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_proof_run(args: argparse.Namespace) -> int:
+    """Run the pinned repository-local synthetic interoperability proof."""
+
+    proof = interoperability_pipeline.run_synthetic_proof()
+    source_contract = reference_text(proof["source_envelope"]["contract"])
+    target_contract = reference_text(proof["target_envelope"]["contract"])
+    mapping = reference_text(proof["mapping"]["mapping_id"])
+    payload = {
+        "status": "PASS",
+        "proof": proof,
+        "network_access": False,
+    }
+    text = (
+        "PASS: EXPERIMENTAL synthetic interoperability proof; "
+        f"{source_contract} -> {mapping} -> {target_contract}; "
+        "target approval not asserted; network access disabled."
+    )
+    emit(payload, text, json_output=args.json_output)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="meaningwire",
-        description="MeaningWire pre-release read-only inspection and validation CLI",
+        description="MeaningWire pre-release inspection, validation, and synthetic-proof CLI",
     )
     parser.add_argument(
         "--version",
@@ -263,6 +286,14 @@ def build_parser() -> argparse.ArgumentParser:
     mappings_inspect.add_argument("--version", help="mapping version; required if identity is ambiguous")
     add_json_flag(mappings_inspect)
     mappings_inspect.set_defaults(handler=cmd_mappings_inspect)
+
+    proof = commands.add_parser("proof", help="run repository-local interoperability proofs")
+    proof_commands = proof.add_subparsers(dest="proof_command", required=True)
+    proof_run = proof_commands.add_parser(
+        "run", help="run the pinned synthetic adapter-to-mapping proof"
+    )
+    add_json_flag(proof_run)
+    proof_run.set_defaults(handler=cmd_proof_run)
 
     return parser
 
