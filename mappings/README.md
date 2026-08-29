@@ -30,6 +30,12 @@ The registry is deliberately conservative:
 
 Use `tools/mapping_registry.py` for deterministic registry integrity checks and lookup behavior.
 
-The registered mappings currently in this repository are synthetic examples for testing the registry. They do not claim compatibility with real vendors or production systems.
+## Execution foundation
 
-See `docs/architecture/mapping-registry.md` for the selection and security boundary.
+`tools/mapping_executor.py` provides the first deliberately narrow execution primitive. It accepts an explicit mapping plus an already-selected source value and currently executes only `transform.kind = identity`.
+
+All other transform kinds, missing transforms, and invalid mappings fail closed. The executor does not parse source/target paths, traverse documents, choose mappings, run expressions or code, mutate input files, or perform broad conversion.
+
+The registered mappings currently in this repository are synthetic examples for testing registry and identity-execution behavior. They do not claim compatibility with real vendors or production systems.
+
+See `docs/architecture/mapping-registry.md` for selection behavior and `docs/architecture/mapping-execution-foundation.md` for the execution/security boundary.
