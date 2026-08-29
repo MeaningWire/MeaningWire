@@ -9,7 +9,7 @@ permissions:
 jobs:
   candidate:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 14
     steps:
       - name: Check out exact selected ref
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -49,9 +49,29 @@ jobs:
         run: python -m unittest discover -s tests -v
 
       - name: Build candidate twice from exact commit
+        shell: bash
         run: |
+          set -euo pipefail
           python tools/release_builder.py --output-dir dist/first --source-commit "$GITHUB_SHA"
           python tools/release_builder.py --output-dir dist/second --source-commit "$GITHUB_SHA"
+
+      - name: Fetch and verify exact official SPDX 2.3 schema
+        run: >-
+          python tools/fetch_spdx_schema.py --output "$RUNNER_TEMP/spdx-2.3-schema.json"
+
+      - name: Validate both candidate SBOMs and promote release evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(cat VERSION)"
+          for candidate_dir in dist/first dist/second; do
+            python tools/validate_spdx_sbom.py \
+              "${candidate_dir}/MeaningWire-${version}.spdx.json" \
+              --schema "$RUNNER_TEMP/spdx-2.3-schema.json" \
+              --release-evidence "${candidate_dir}/release-evidence.json" \
+              --output-evidence "${candidate_dir}/spdx-validation-evidence.json" \
+              --update-release-evidence
+          done
 
       - name: Verify byte-for-byte reproducibility
         shell: bash
@@ -59,7 +79,9 @@ jobs:
           set -euo pipefail
           version="$(cat VERSION)"
           cmp "dist/first/MeaningWire-${version}.tar.gz" "dist/second/MeaningWire-${version}.tar.gz"
+          cmp "dist/first/MeaningWire-${version}.spdx.json" "dist/second/MeaningWire-${version}.spdx.json"
           cmp dist/first/SHA256SUMS dist/second/SHA256SUMS
+          cmp dist/first/spdx-validation-evidence.json dist/second/spdx-validation-evidence.json
           cmp dist/first/release-evidence.json dist/second/release-evidence.json
 
       - name: Verify extracted candidate in isolated locked environment
@@ -96,8 +118,10 @@ jobs:
           version="$(cat VERSION)"
           mkdir -p dist/verified
           cp "dist/first/MeaningWire-${version}.tar.gz" dist/verified/
+          cp "dist/first/MeaningWire-${version}.spdx.json" dist/verified/
           cp dist/first/SHA256SUMS dist/verified/
           cp dist/first/release-evidence.json dist/verified/
+          cp dist/first/spdx-validation-evidence.json dist/verified/
 
       - name: Retain verified candidate evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
