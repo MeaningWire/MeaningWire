@@ -115,31 +115,15 @@ def _candidate_member(candidate_dir: Path, release_evidence: dict[str, Any], pat
 
     archive_path = candidate_dir / archive_name
     try:
-        before_digest = candidate_archive_integrity.archive_sha256(archive_path)
-    except candidate_archive_integrity.CandidateArchiveError as exc:
-        raise PublicationPreflightError(f"candidate archive integrity failure: {exc}") from exc
-    if before_digest != artifact_sha256:
-        raise PublicationPreflightError(
-            "candidate archive SHA-256 changed after readiness validation"
-        )
-    try:
-        files, _manifest, _validation = candidate_archive_integrity.inspect_candidate(
+        files, _manifest, _validation = candidate_archive_integrity.inspect_candidate_stable(
             archive_path,
             version=version,
             source_commit=source_commit,
+            expected_artifact_sha256=artifact_sha256,
             expected_manifest_sha256=manifest_sha256,
         )
     except candidate_archive_integrity.CandidateArchiveError as exc:
         raise PublicationPreflightError(f"candidate archive integrity failure: {exc}") from exc
-
-    try:
-        after_digest = candidate_archive_integrity.archive_sha256(archive_path)
-    except candidate_archive_integrity.CandidateArchiveError as exc:
-        raise PublicationPreflightError(f"candidate archive integrity failure: {exc}") from exc
-    if after_digest != before_digest or after_digest != artifact_sha256:
-        raise PublicationPreflightError(
-            "candidate archive changed during bounded release-notes inspection"
-        )
 
     data = files.get(path)
     if data is None:
