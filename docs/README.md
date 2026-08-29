@@ -6,6 +6,7 @@ Current areas:
 
 - [`architecture/`](architecture/) — architectural principles, boundaries, and accepted design decisions
 - [`reference/`](reference/) — human-readable references derived from canonical schema and mapping data
+- [`releases/`](releases/) — pre-release compatibility, migration, release-note, and publication-boundary guidance
 - [`rfcs/`](rfcs/) — substantial public-contract and governance proposals
 - [`labs/`](labs/) — explicitly experimental research and frontier concepts
 - [`quickstart.md`](quickstart.md) — the current repository-local pre-release evaluation path
@@ -27,6 +28,18 @@ python tools/generate_reference_docs.py --check
 ```
 
 to verify that committed references match canonical repository data. CI runs the check form and fails on drift.
+
+## Release and compatibility guidance
+
+MeaningWire's pre-release compatibility expectations are explicit rather than implied by the version string alone.
+
+See:
+
+- [`releases/compatibility-and-migrations.md`](releases/compatibility-and-migrations.md) — compatibility surfaces, breaking/additive/corrective change classification, migration-note requirements, prerelease progression, and current non-claims
+- [`releases/release-notes-template.md`](releases/release-notes-template.md) — evidence-first structure required for a future public release
+- [`architecture/release-agent-foundation.md`](architecture/release-agent-foundation.md) — reproducible non-publishing candidate build and verification boundary
+
+The current `VERSION` identifies a candidate line. It does not mean a GitHub Release, package, documentation deployment, or launch has occurred.
 
 ## Documentation site direction
 

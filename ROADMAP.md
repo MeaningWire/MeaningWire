@@ -88,7 +88,10 @@ Current evidence already includes:
 - fresh-environment verification of the extracted candidate in an isolated Python environment before candidate evidence is considered verified;
 - an accepted Astro + Starlight documentation-stack decision with explicit reproducibility, accessibility, static-output, and deployment constraints;
 - a low-cognitive-load documentation information architecture for beginner, builder, model/research, and evaluation/integration entry paths;
-- deterministic human-readable schema and mapping references generated from canonical registries, with CI drift detection so generated documentation cannot silently diverge from the JSON source of truth.
+- deterministic human-readable schema and mapping references generated from canonical registries, with CI drift detection so generated documentation cannot silently diverge from the JSON source of truth;
+- an explicit pre-release compatibility policy that classifies additive, corrective, breaking, security-sensitive, and internal-only changes across named compatibility surfaces;
+- migration-note requirements for breaking changes and an evidence-first release-note template for future versioned publication;
+- a reconciled unreleased changelog that distinguishes candidate builds from published releases.
 
 Remaining Phase 4 work includes:
 
@@ -98,7 +101,6 @@ Remaining Phase 4 work includes:
 - architecture explanations and worked mapping examples beyond the current proof;
 - standards crosswalk documentation;
 - integrate the generated schema and mapping references into local static-site search once the Starlight build is locked and reproducible;
-- release-note and compatibility/migration expectations;
 - supply-chain evidence appropriate to a public preview, including SBOM/signing/provenance decisions;
 - an explicitly governed publication path from a verified candidate to a public GitHub Release.
 
@@ -126,6 +128,7 @@ Before MeaningWire is presented as something people should try or adopt, the pro
 - release provenance and artifacts;
 - installation and quickstart documentation that works without private context;
 - explicit statements of supported, experimental, and unfinished behavior;
+- explicit compatibility and migration expectations for the release's public surfaces;
 - a fresh-environment proof that supported public software can be built, tested, validated, and prepared for release without private repositories, private packages, hidden schemas, private test data, or undocumented services.
 
 The technical mechanisms for these items are being assembled and tested during Phase 4. Meeting the threshold still requires a deliberate release-readiness reconciliation; it does not automatically publish anything.
@@ -138,7 +141,7 @@ After the release threshold is met and publication is separately authorized:
 
 - publish a versioned preview release;
 - announce what is actually available rather than pitching unfinished roadmap ideas;
-- document compatibility and migration expectations;
+- publish compatibility and migration expectations with the release;
 - open broader review and contribution channels if useful;
 - enable GitHub Discussions if it serves a real purpose;
 - use the transparent RFC process for consequential public-contract changes;
