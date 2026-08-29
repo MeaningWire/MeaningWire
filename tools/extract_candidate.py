@@ -110,17 +110,11 @@ def extract_candidate(
         raise CandidateExtractionError("release evidence artifact_sha256 is invalid")
 
     try:
-        actual_archive_sha256 = candidate_archive_integrity.archive_sha256(archive)
-    except candidate_archive_integrity.CandidateArchiveError as exc:
-        raise CandidateExtractionError(f"candidate archive integrity failure: {exc}") from exc
-    if actual_archive_sha256 != archive_sha256:
-        raise CandidateExtractionError("candidate archive SHA-256 does not match release evidence")
-
-    try:
-        files, manifest, _validation = candidate_archive_integrity.inspect_candidate(
+        files, manifest, _validation = candidate_archive_integrity.inspect_candidate_stable(
             archive,
             version=version,
             source_commit=source_commit,
+            expected_artifact_sha256=archive_sha256,
             expected_manifest_sha256=manifest_sha256,
         )
     except candidate_archive_integrity.CandidateArchiveError as exc:
