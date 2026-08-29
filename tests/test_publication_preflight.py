@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import tarfile
 import tempfile
@@ -80,6 +81,22 @@ class PublicationPreflightTests(unittest.TestCase):
         self.assertIn(b"Prepublication evidence", notes)
         self.assertIn(commit.encode(), notes)
 
+    def test_dirty_workspace_version_cannot_change_preflight_identity(self) -> None:
+        with tempfile.TemporaryDirectory() as candidate_temp, tempfile.TemporaryDirectory() as workspace_temp:
+            directory, commit, version = self._candidate(Path(candidate_temp))
+            workspace = Path(workspace_temp)
+            (workspace / "VERSION").write_text("9.9.9-dirty\n", encoding="utf-8")
+            original_cwd = Path.cwd()
+            try:
+                os.chdir(workspace)
+                report, _notes = self._evaluate(directory, commit, version)
+            finally:
+                os.chdir(original_cwd)
+        self.assertEqual(report["version"], version)
+        self.assertEqual(report["tag_name"], f"v{version}")
+        self.assertEqual(report["release_title"], f"MeaningWire {version}")
+        self.assertTrue(report["prerelease"])
+
     def test_preflight_does_not_use_raw_tar_member_lookup(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             directory, commit, version = self._candidate(Path(temp))
@@ -141,7 +158,7 @@ class PublicationPreflightTests(unittest.TestCase):
     def test_version_mismatch_fails_closed(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             directory, commit, version = self._candidate(Path(temp))
-            with self.assertRaisesRegex(preflight.PublicationPreflightError, "canonical VERSION"):
+            with self.assertRaisesRegex(preflight.PublicationPreflightError, "exact candidate VERSION"):
                 self._evaluate(directory, commit, version, requested_version="0.1.0-alpha.99")
 
     def test_tag_mismatch_fails_closed(self) -> None:

@@ -230,10 +230,24 @@ def evaluate_preflight(
     if not _VERSION_RE.fullmatch(requested_version):
         raise PublicationPreflightError("requested version must be valid SemVer")
 
-    canonical_version = Path("VERSION").read_text(encoding="utf-8").strip()
+    release_evidence_path = directory / "release-evidence.json"
+    readiness_path = directory / "release-readiness.json"
+    release_evidence = _read_json(release_evidence_path)
+    stored_readiness = _read_json(readiness_path)
+
+    canonical_version = release_evidence.get("version")
+    if not isinstance(canonical_version, str) or not _VERSION_RE.fullmatch(canonical_version):
+        raise PublicationPreflightError("release evidence version is not valid SemVer")
+    if release_evidence.get("source_commit") != source_commit:
+        raise PublicationPreflightError("release evidence source commit does not match requested source SHA")
+    if release_evidence.get("publication_performed") is not False:
+        raise PublicationPreflightError("candidate release evidence does not preserve non-publication state")
+    if release_evidence.get("attestation_performed") is not False:
+        raise PublicationPreflightError("candidate release evidence does not preserve non-attestation state")
+
     if requested_version != canonical_version:
         raise PublicationPreflightError(
-            f"requested version {requested_version!r} does not match canonical VERSION {canonical_version!r}"
+            f"requested version {requested_version!r} does not match exact candidate VERSION {canonical_version!r}"
         )
     expected_tag = f"v{canonical_version}"
     if tag_name != expected_tag:
@@ -248,22 +262,8 @@ def evaluate_preflight(
     expected_prerelease = _is_prerelease(canonical_version)
     if prerelease is not expected_prerelease:
         raise PublicationPreflightError(
-            "GitHub prerelease classification does not match canonical version semantics"
+            "GitHub prerelease classification does not match exact candidate version semantics"
         )
-
-    release_evidence_path = directory / "release-evidence.json"
-    readiness_path = directory / "release-readiness.json"
-    release_evidence = _read_json(release_evidence_path)
-    stored_readiness = _read_json(readiness_path)
-
-    if release_evidence.get("version") != canonical_version:
-        raise PublicationPreflightError("release evidence version does not match canonical VERSION")
-    if release_evidence.get("source_commit") != source_commit:
-        raise PublicationPreflightError("release evidence source commit does not match requested source SHA")
-    if release_evidence.get("publication_performed") is not False:
-        raise PublicationPreflightError("candidate release evidence does not preserve non-publication state")
-    if release_evidence.get("attestation_performed") is not False:
-        raise PublicationPreflightError("candidate release evidence does not preserve non-attestation state")
 
     try:
         recomputed_readiness = release_readiness.evaluate_readiness(
@@ -279,7 +279,7 @@ def evaluate_preflight(
             "stored release-readiness.json is stale or inconsistent with exact candidate evidence"
         )
     if stored_readiness.get("version") != canonical_version:
-        raise PublicationPreflightError("readiness report version does not match canonical VERSION")
+        raise PublicationPreflightError("readiness report version does not match exact candidate VERSION")
     if stored_readiness.get("source_commit") != source_commit:
         raise PublicationPreflightError("readiness report source commit does not match requested source SHA")
 
