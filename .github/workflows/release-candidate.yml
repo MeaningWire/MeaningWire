@@ -19,6 +19,12 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: ".node-version"
+          package-manager-cache: false
+
       - name: Verify immutable workflow action pins
         run: python tools/validate_workflow_pins.py
 
@@ -47,6 +53,27 @@ jobs:
 
       - name: Run deterministic unit tests
         run: python -m unittest discover -s tests -v
+
+      - name: Install locked documentation dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build documentation twice and verify deterministic static output
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf dist "$RUNNER_TEMP/meaningwire-docs-first"
+          npm run docs:build
+          test -f dist/index.html
+          cp -a dist "$RUNNER_TEMP/meaningwire-docs-first"
+          rm -rf dist
+          npm run docs:build
+          test -f dist/index.html
+          diff -qr "$RUNNER_TEMP/meaningwire-docs-first" dist
+          if find dist -type l -print -quit | grep -q .; then
+            echo "ERROR: documentation output contains a symbolic link" >&2
+            exit 1
+          fi
+          echo "PASS: locked Starlight build produced byte-identical static output twice."
 
       - name: Build candidate twice from exact commit
         shell: bash
@@ -120,6 +147,7 @@ jobs:
               --candidate-dir "$candidate_dir" \
               --source-commit "$GITHUB_SHA" \
               --fresh-environment-verified \
+              --documentation-build-verified \
               --output "${candidate_dir}/release-readiness.json"
           done
           cmp dist/first/release-readiness.json dist/second/release-readiness.json

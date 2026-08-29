@@ -87,6 +87,9 @@ Current evidence already includes:
 - a manual-only, non-publishing release-candidate workflow with read-only repository permissions;
 - fresh-environment verification of the extracted candidate in an isolated Python environment before candidate evidence is considered verified;
 - an accepted Astro + Starlight documentation-stack decision with explicit reproducibility, accessibility, static-output, and deployment constraints;
+- a locked documentation source/build foundation using Node 22.19.0, npm 10.9.3, Astro 7.2.9, Starlight 0.41.10, a committed npm lockfile, static output, and local Pagefind search;
+- exact-head CI proof that the locked documentation build succeeds twice with byte-identical complete static output and no output symlinks;
+- initial Starlight entry paths for getting started, builders, model/research readers, and integration/evaluation readers, plus a project-owned pre-deployment 404 page;
 - a low-cognitive-load documentation information architecture for beginner, builder, model/research, and evaluation/integration entry paths;
 - deterministic human-readable schema and mapping references generated from canonical registries, with CI drift detection so generated documentation cannot silently diverge from the JSON source of truth;
 - an explicit pre-release compatibility policy that classifies additive, corrective, breaking, security-sensitive, and internal-only changes across named compatibility surfaces;
@@ -100,25 +103,24 @@ Current evidence already includes:
 - exact upstream SPDX 2.3 schema identity pinning, Git-blob verification, official-schema validation, and a second MeaningWire-specific scope/digest policy validation layer;
 - deterministic SBOM validation evidence plus a `PENDING` → `PASS` release-evidence lifecycle that prevents an unvalidated SBOM from being presented as verified;
 - a deterministic machine-readable release-readiness gate that separately evaluates mechanical release-threshold evidence, launch experience, and publication capability;
+- a verified documentation-build input that allows the launch-experience layer to pass only when the current source scaffold and repeated deterministic build have both been proven;
 - a fail-closed future-publication contract in which `--require-ready` must reject publication while any machine-evaluated blocker remains;
 - an explicit human authority boundary that remains pending even after a future `READY_FOR_HUMAN_DECISION` result;
 - an explicit boundary that public Sigstore/GitHub attestations remain disabled during quiet pre-release candidate work and belong to the separately governed publication path.
 
 Remaining Phase 4 work includes:
 
-- create and validate the Starlight source scaffold with a pinned compatible Node/Astro/Starlight toolchain and committed package-manager lockfile;
-- prove the documentation site builds deterministically in CI before treating the launch-experience gate as satisfied;
-- accessible documentation site targeting WCAG 2.2 AA;
-- implement the beginner, builder, researcher/model, and integration/evaluation entry paths;
+- accessibility review and hardening toward the WCAG 2.2 AA target without claiming formal conformance before sufficient testing;
+- deepen the beginner, builder, researcher/model, and integration/evaluation paths as the public surface grows;
 - architecture explanations and worked mapping examples beyond the current proof;
 - standards crosswalk documentation;
-- integrate the generated schema and mapping references into local static-site search once the Starlight build is locked and reproducible;
+- integrate the generated schema and mapping references into Starlight navigation and local static-site search;
 - evaluate and prove an eventual SPDX 3 migration path without weakening current deterministic SBOM verification;
 - implement the separately governed manual publication workflow with fail-closed readiness enforcement;
 - implement release-only build/SBOM attestations and documented public verification inside that publication boundary;
 - reconcile the machine-readable readiness report until the exact candidate reaches `READY_FOR_HUMAN_DECISION` before asking for public release authorization.
 
-Public documentation deployment, public artifact attestation, and public release publication remain outside the current automated candidate boundary.
+Public documentation deployment, public artifact attestation, and public release publication remain outside the current automated candidate boundary. The canonical Astro `site` URL remains intentionally unset until a real deployment URL is separately authorized and exists.
 
 ## Phase 5 — Real-world proof
 

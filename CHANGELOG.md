@@ -27,6 +27,8 @@ The repository currently has a prerelease candidate version identifier, but **no
 - Fresh-environment verification of the extracted candidate in an isolated Python environment.
 - Manual-only release-candidate workflow that retains verified evidence without publishing a release.
 - Accepted Astro + Starlight documentation architecture and low-cognitive-load information architecture, without deployment.
+- Locked Starlight documentation source/build foundation using Node 22.19.0, npm 10.9.3, Astro 7.2.9, Starlight 0.41.10, a committed npm lockfile, static output, local Pagefind search, and exact-head CI proof of byte-identical repeated builds.
+- Initial Starlight entry pages for getting started, builders, model/research readers, integration/evaluation readers, and project-owned 404 recovery behavior without inventing a deployment URL.
 - Deterministically generated schema and mapping reference pages with CI drift detection.
 - Explicit pre-release compatibility and migration policy covering schemas, mappings, execution behavior, CLI, Adapter SDK, artifact/evidence formats, and documentation.
 - Evidence-first release-notes template for future versioned publication.
@@ -50,6 +52,7 @@ The repository currently has a prerelease candidate version identifier, but **no
 - Candidate `SHA256SUMS` now covers both the candidate archive and its transitional SPDX document.
 - Release notes now require explicit SBOM format, scope, digest, validation evidence, and supply-chain non-claims when an SBOM is published.
 - Release-readiness reconciliation is now executable rather than an informal future checklist: `BLOCKED` is a valid evaluated state, while `READY_FOR_HUMAN_DECISION` still requires explicit release authorization.
+- Verified deterministic documentation-build evidence can now satisfy the launch-experience layer independently of publication capability; publication remains blocked until the governed publication and public-attestation paths exist.
 - The retained candidate evidence set now includes the deterministic readiness report in addition to archive, SBOM, checksums, release evidence, and SBOM-validation evidence.
 - GitHub workflow actions were refreshed to reviewed current v7 releases that natively declare Node 24 while preserving full-commit-SHA pinning and the existing workflow behavior used by MeaningWire.
 
