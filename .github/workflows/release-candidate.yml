@@ -122,8 +122,11 @@ jobs:
             sha256sum -c SHA256SUMS
           )
           rm -rf "$RUNNER_TEMP/meaningwire-extracted" "$RUNNER_TEMP/meaningwire-venv"
-          mkdir -p "$RUNNER_TEMP/meaningwire-extracted"
-          tar -xzf "$candidate" -C "$RUNNER_TEMP/meaningwire-extracted"
+          python tools/extract_candidate.py \
+            --archive "$candidate" \
+            --release-evidence "$GITHUB_WORKSPACE/dist/first/release-evidence.json" \
+            --destination "$RUNNER_TEMP/meaningwire-extracted" \
+            --source-commit "$GITHUB_SHA"
           python -m venv "$RUNNER_TEMP/meaningwire-venv"
           "$RUNNER_TEMP/meaningwire-venv/bin/python" -m pip install --disable-pip-version-check --require-hashes --only-binary=:all: -r "$RUNNER_TEMP/meaningwire-extracted/MeaningWire-${version}/requirements-validation.lock"
           (
