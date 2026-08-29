@@ -20,6 +20,24 @@ import release_readiness  # noqa: E402
 import validate_spdx_sbom  # noqa: E402
 
 
+class _GrowingReader:
+    def __init__(self, descriptor, payload: bytes) -> None:
+        self._descriptor = descriptor
+        self._payload = io.BytesIO(payload)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        self._descriptor.close()
+
+    def fileno(self) -> int:
+        return self._descriptor.fileno()
+
+    def read(self, size: int = -1) -> bytes:
+        return self._payload.read(size)
+
+
 class BoundedCandidateHashingTests(unittest.TestCase):
     def _validated_candidate(self, directory: Path) -> tuple[dict[str, Path], dict[str, object]]:
         commit = release_builder.current_commit()
@@ -69,15 +87,29 @@ class BoundedCandidateHashingTests(unittest.TestCase):
                     ):
                         integrity.archive_sha256(result["archive"])
 
-    def test_archive_growth_during_hashing_is_rejected(self) -> None:
-        fake_archive = io.BytesIO(b"12345")
-        with mock.patch.object(integrity, "MAX_ARCHIVE_BYTES", 4):
-            with mock.patch.object(integrity, "_archive_size", return_value=4):
-                with mock.patch.object(Path, "open", return_value=fake_archive):
+    def test_archive_replacement_after_path_stat_is_rejected_after_open(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            result = release_builder.build_release_candidate(Path(temp))
+            with mock.patch.object(integrity, "MAX_ARCHIVE_BYTES", 1):
+                with mock.patch.object(integrity, "_archive_size", return_value=1):
                     with self.assertRaisesRegex(
-                        integrity.CandidateArchiveError, "during hashing"
+                        integrity.CandidateArchiveError, "after open"
                     ):
-                        integrity.archive_sha256(Path("candidate.tar.gz"))
+                        integrity.archive_sha256(result["archive"])
+
+    def test_archive_growth_during_hashing_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            descriptor_path = Path(temp) / "descriptor.bin"
+            descriptor_path.write_bytes(b"1234")
+            descriptor = open(descriptor_path, "rb")
+            growing = _GrowingReader(descriptor, b"12345")
+            with mock.patch.object(integrity, "MAX_ARCHIVE_BYTES", 4):
+                with mock.patch.object(integrity, "_archive_size", return_value=4):
+                    with mock.patch.object(Path, "open", return_value=growing):
+                        with self.assertRaisesRegex(
+                            integrity.CandidateArchiveError, "during hashing"
+                        ):
+                            integrity.archive_sha256(Path("candidate.tar.gz"))
 
     def test_extraction_rejects_over_limit_candidate_before_output(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
