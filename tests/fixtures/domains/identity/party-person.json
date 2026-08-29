@@ -1,0 +1,25 @@
+{
+  "party_type": "person",
+  "names": [
+    {"kind": "display", "value": "Synthetic Person"},
+    {"kind": "given", "value": "Synthetic"},
+    {"kind": "family", "value": "Person"}
+  ],
+  "identifiers": [
+    {
+      "value": "PERSON-001",
+      "scheme": "synthetic-person-id",
+      "scheme_version": "1",
+      "scheme_agency": "meaningwire-test-fixtures"
+    }
+  ],
+  "contact_points": [
+    {
+      "kind": "email",
+      "value": "person@example.invalid",
+      "purpose": "synthetic test contact",
+      "preferred": true,
+      "language": "en"
+    }
+  ]
+}
