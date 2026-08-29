@@ -175,7 +175,7 @@ class CandidateArchiveIntegrityTests(unittest.TestCase):
         with self.assertRaisesRegex(integrity.CandidateArchiveError, "duplicate release manifest path"):
             integrity.validate_manifest(
                 manifest,
-                {"README.md": data, "RELEASE-MANIFEST.json": b"{}"},
+                {"VERSION": b"0.1.0-alpha.0\n", "README.md": data, "RELEASE-MANIFEST.json": b"{}"},
                 version="0.1.0-alpha.0",
                 source_commit="b" * 40,
             )
@@ -197,7 +197,7 @@ class CandidateArchiveIntegrityTests(unittest.TestCase):
             "runtime_network_access": False,
             "files": [base_record],
         }
-        archive_files = {"README.md": data, "RELEASE-MANIFEST.json": b"{}"}
+        archive_files = {"VERSION": b"0.1.0-alpha.0\n", "README.md": data, "RELEASE-MANIFEST.json": b"{}"}
 
         wrong_hash = json.loads(json.dumps(base_manifest))
         wrong_hash["files"][0]["sha256"] = "0" * 64
