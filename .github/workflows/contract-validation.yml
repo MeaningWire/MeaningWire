@@ -31,6 +31,11 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: ".node-version"
+          package-manager-cache: false
       - name: Verify immutable workflow action pins
         run: python tools/validate_workflow_pins.py
       - name: Verify validation dependency lock structure
@@ -68,6 +73,25 @@ jobs:
           python tools/meaningwire.py schemas list --json
           python tools/meaningwire.py mappings list --json
           python tools/meaningwire.py proof run --json
+      - name: Install locked documentation dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Build documentation twice and verify deterministic static output
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf dist /tmp/meaningwire-docs-first
+          npm run docs:build
+          test -f dist/index.html
+          cp -a dist /tmp/meaningwire-docs-first
+          rm -rf dist
+          npm run docs:build
+          test -f dist/index.html
+          diff -qr /tmp/meaningwire-docs-first dist
+          if find dist -type l -print -quit | grep -q .; then
+            echo "ERROR: documentation output contains a symbolic link" >&2
+            exit 1
+          fi
+          echo "PASS: locked Starlight build produced byte-identical static output twice."
       - name: Build candidate twice from exact commit
         shell: bash
         run: |
@@ -135,6 +159,7 @@ jobs:
               --candidate-dir "$candidate_dir" \
               --source-commit "$SOURCE_SHA" \
               --fresh-environment-verified \
+              --documentation-build-verified \
               --output "${candidate_dir}/release-readiness.json"
           done
           cmp /tmp/meaningwire-first/release-readiness.json /tmp/meaningwire-second/release-readiness.json
