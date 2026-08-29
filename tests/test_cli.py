@@ -26,6 +26,7 @@ class MeaningWireCLITests(unittest.TestCase):
         self.assertEqual(code, 0, stderr)
         payload = json.loads(stdout)
         self.assertEqual(payload["status"], "PASS")
+        self.assertEqual(payload["version"], "0.1.0-alpha.0")
         self.assertEqual(payload["schemas"]["bootstrap_registered"], 6)
         self.assertEqual(payload["schemas"]["draft_2020_12_registered"], 6)
         self.assertEqual(payload["mappings"]["registered"], 2)
@@ -110,6 +111,7 @@ class MeaningWireCLITests(unittest.TestCase):
             ).read_text(encoding="utf-8")
         )
         self.assertEqual(payload["status"], "PASS")
+        self.assertEqual(payload["version"], "0.1.0-alpha.0")
         self.assertFalse(payload["network_access"])
         self.assertEqual(payload["proof"]["target_envelope"], expected)
         self.assertEqual(
@@ -122,6 +124,7 @@ class MeaningWireCLITests(unittest.TestCase):
         self.assertEqual(code, 0, stderr)
         self.assertEqual(stderr, "")
         self.assertIn("PASS: EXPERIMENTAL synthetic interoperability proof", stdout)
+        self.assertIn("version=0.1.0-alpha.0", stdout)
         self.assertIn("target approval not asserted", stdout)
         self.assertIn("network access disabled", stdout)
 
