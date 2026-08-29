@@ -132,8 +132,6 @@ def read_archive(archive_path: str | Path, version: str) -> dict[str, bytes]:
                 bounded = _BoundedReader(
                     compressed, MAX_DECOMPRESSED_STREAM_BYTES, "decompressed stream"
                 )
-                # Stream the tar sequentially so validation can enforce member and byte
-                # ceilings before an unbounded member list or payload set is materialized.
                 with tarfile.open(fileobj=bounded, mode="r|") as archive:
                     for member in archive:
                         member_count += 1
@@ -220,6 +218,12 @@ def validate_manifest(
     if manifest.get("runtime_network_access") is not False:
         raise CandidateArchiveError("release manifest runtime network boundary is invalid")
 
+    version_bytes = archive_files.get("VERSION")
+    if version_bytes is None:
+        raise CandidateArchiveError("candidate archive is missing VERSION")
+    if version_bytes != f"{version}\n".encode("utf-8"):
+        raise CandidateArchiveError("packaged VERSION does not match declared release version")
+
     records = manifest.get("files")
     if not isinstance(records, list) or not records:
         raise CandidateArchiveError("release manifest files must be a non-empty array")
@@ -267,10 +271,7 @@ def validate_manifest(
             details.append("manifest-only files: " + ", ".join(extra))
         raise CandidateArchiveError("release manifest/archive mismatch: " + "; ".join(details))
 
-    return {
-        "file_count": len(seen),
-        "paths": seen,
-    }
+    return {"file_count": len(seen), "paths": seen}
 
 
 def inspect_candidate(
