@@ -12,7 +12,7 @@ permissions:
 jobs:
   contracts:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -56,5 +56,29 @@ jobs:
           cmp "/tmp/meaningwire-first/MeaningWire-${version}.tar.gz" "/tmp/meaningwire-second/MeaningWire-${version}.tar.gz"
           cmp /tmp/meaningwire-first/SHA256SUMS /tmp/meaningwire-second/SHA256SUMS
           cmp /tmp/meaningwire-first/release-evidence.json /tmp/meaningwire-second/release-evidence.json
+      - name: Verify extracted candidate in isolated environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(cat VERSION)"
+          candidate="/tmp/meaningwire-first/MeaningWire-${version}.tar.gz"
+          (
+            cd /tmp/meaningwire-first
+            sha256sum -c SHA256SUMS
+          )
+          rm -rf /tmp/meaningwire-extracted /tmp/meaningwire-venv
+          mkdir -p /tmp/meaningwire-extracted
+          tar -xzf "$candidate" -C /tmp/meaningwire-extracted
+          python -m venv /tmp/meaningwire-venv
+          /tmp/meaningwire-venv/bin/python -m pip install --disable-pip-version-check -r "/tmp/meaningwire-extracted/MeaningWire-${version}/requirements-validation.txt"
+          (
+            cd "/tmp/meaningwire-extracted/MeaningWire-${version}"
+            export PYTHONNOUSERSITE=1
+            /tmp/meaningwire-venv/bin/python tools/meaningwire.py doctor --json
+            /tmp/meaningwire-venv/bin/python tools/meaningwire.py proof run --json
+            /tmp/meaningwire-venv/bin/python tools/meaningwire.py schema validate \
+              urn:meaningwire:schema:identity:party:0.1.0 \
+              tests/fixtures/domains/identity/party-person.json --json
+          )
       - name: Run deterministic unit tests
         run: python -m unittest discover -s tests -v

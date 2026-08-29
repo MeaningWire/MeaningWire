@@ -72,6 +72,25 @@ The build output directory also contains:
 
 These files are evidence for a candidate build, not a signature or third-party attestation.
 
+## Fresh-environment candidate proof
+
+Normal CI and the manual candidate workflow verify the built archive itself rather than relying only on the source checkout that produced it.
+
+The proof:
+
+1. verifies the archive against `SHA256SUMS`;
+2. extracts the versioned candidate into a fresh directory;
+3. creates a new Python virtual environment;
+4. installs only the documented public dependency from the extracted candidate's `requirements-validation.txt`;
+5. disables user-site Python packages with `PYTHONNOUSERSITE=1`;
+6. runs `meaningwire doctor` from the extracted candidate;
+7. runs the pinned interoperability proof from the extracted candidate;
+8. validates the synthetic Identity / Party fixture from the extracted candidate.
+
+This demonstrates that the documented public path works from a clean extracted candidate without a `.git` directory, private repository, private package, hidden schema, private fixture, credential, or undocumented MeaningWire service.
+
+The dependency installation step uses the public Python package index through ordinary `pip`; the MeaningWire runtime proof itself remains local and performs no network access. This is evidence for the tested GitHub-hosted Linux / CPython 3.12 environment, not a universal operating-system or interpreter-compatibility claim.
+
 ## GitHub Actions workflow
 
 `.github/workflows/release-candidate.yml` is manual-only (`workflow_dispatch`). It:
@@ -81,7 +100,9 @@ These files are evidence for a candidate build, not a signature or third-party a
 3. runs contract validation, the CLI proof, and deterministic unit tests;
 4. builds the candidate twice from the exact Actions commit;
 5. requires the two archives, checksum files, and evidence files to be byte-identical;
-6. retains one verified candidate set as a GitHub Actions artifact.
+6. verifies the checksum and exercises the extracted candidate in an isolated Python environment;
+7. stages the verified archive, checksum, and evidence;
+8. retains that candidate set as a GitHub Actions artifact.
 
 The workflow has read-only repository permissions. Artifact upload is workflow-output retention, not release publication.
 

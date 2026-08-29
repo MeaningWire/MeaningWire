@@ -9,7 +9,7 @@ permissions:
 jobs:
   candidate:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - name: Check out exact selected ref
         uses: actions/checkout@v4
@@ -49,6 +49,37 @@ jobs:
           cmp "dist/first/MeaningWire-${version}.tar.gz" "dist/second/MeaningWire-${version}.tar.gz"
           cmp dist/first/SHA256SUMS dist/second/SHA256SUMS
           cmp dist/first/release-evidence.json dist/second/release-evidence.json
+
+      - name: Verify extracted candidate in isolated environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(cat VERSION)"
+          candidate="$GITHUB_WORKSPACE/dist/first/MeaningWire-${version}.tar.gz"
+          (
+            cd "$GITHUB_WORKSPACE/dist/first"
+            sha256sum -c SHA256SUMS
+          )
+          rm -rf "$RUNNER_TEMP/meaningwire-extracted" "$RUNNER_TEMP/meaningwire-venv"
+          mkdir -p "$RUNNER_TEMP/meaningwire-extracted"
+          tar -xzf "$candidate" -C "$RUNNER_TEMP/meaningwire-extracted"
+          python -m venv "$RUNNER_TEMP/meaningwire-venv"
+          "$RUNNER_TEMP/meaningwire-venv/bin/python" -m pip install --disable-pip-version-check -r "$RUNNER_TEMP/meaningwire-extracted/MeaningWire-${version}/requirements-validation.txt"
+          (
+            cd "$RUNNER_TEMP/meaningwire-extracted/MeaningWire-${version}"
+            export PYTHONNOUSERSITE=1
+            "$RUNNER_TEMP/meaningwire-venv/bin/python" tools/meaningwire.py doctor --json
+            "$RUNNER_TEMP/meaningwire-venv/bin/python" tools/meaningwire.py proof run --json
+            "$RUNNER_TEMP/meaningwire-venv/bin/python" tools/meaningwire.py schema validate \
+              urn:meaningwire:schema:identity:party:0.1.0 \
+              tests/fixtures/domains/identity/party-person.json --json
+          )
+
+      - name: Stage verified candidate evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(cat VERSION)"
           mkdir -p dist/verified
           cp "dist/first/MeaningWire-${version}.tar.gz" dist/verified/
           cp dist/first/SHA256SUMS dist/verified/
