@@ -21,6 +21,7 @@ export default defineConfig({
           items: [
             { label: 'Getting started', slug: 'getting-started' },
             { label: 'How MeaningWire works', slug: 'how-it-works' },
+            { label: 'Accessibility', slug: 'accessibility' },
           ],
         },
         {
