@@ -91,7 +91,10 @@ Current evidence already includes:
 - deterministic human-readable schema and mapping references generated from canonical registries, with CI drift detection so generated documentation cannot silently diverge from the JSON source of truth;
 - an explicit pre-release compatibility policy that classifies additive, corrective, breaking, security-sensitive, and internal-only changes across named compatibility surfaces;
 - migration-note requirements for breaking changes and an evidence-first release-note template for future versioned publication;
-- a reconciled unreleased changelog that distinguishes candidate builds from published releases.
+- a reconciled unreleased changelog that distinguishes candidate builds from published releases;
+- immutable full-commit pins for external GitHub Actions plus CI enforcement that rejects floating workflow action references;
+- an accepted supply-chain evidence direction: SPDX 3 as the preferred strategic SBOM family once tooling is proven, SLSA 1.2 provenance as the current provenance model, keyless GitHub/Sigstore identity for future release signing, and `actions/attest` rather than the deprecated `attest-sbom` path;
+- an explicit boundary that public Sigstore/GitHub attestations remain disabled during quiet pre-release candidate work and belong to the separately governed publication path.
 
 Remaining Phase 4 work includes:
 
@@ -101,10 +104,11 @@ Remaining Phase 4 work includes:
 - architecture explanations and worked mapping examples beyond the current proof;
 - standards crosswalk documentation;
 - integrate the generated schema and mapping references into local static-site search once the Starlight build is locked and reproducible;
-- supply-chain evidence appropriate to a public preview, including SBOM/signing/provenance decisions;
+- establish reproducible dependency locking and then generate/validate an accurately scoped SBOM rather than a decorative incomplete inventory;
+- implement release-only build/SBOM attestations and documented verification after the publication boundary is explicitly authorized;
 - an explicitly governed publication path from a verified candidate to a public GitHub Release.
 
-Public documentation deployment and public release publication remain outside the current automated release-agent boundary.
+Public documentation deployment, public artifact attestation, and public release publication remain outside the current automated release-agent boundary.
 
 ## Phase 5 — Real-world proof
 
@@ -129,6 +133,8 @@ Before MeaningWire is presented as something people should try or adopt, the pro
 - installation and quickstart documentation that works without private context;
 - explicit statements of supported, experimental, and unfinished behavior;
 - explicit compatibility and migration expectations for the release's public surfaces;
+- immutable external CI/action inputs and documented supply-chain verification expectations;
+- an accurately scoped SBOM and provenance strategy appropriate to the artifact actually being published;
 - a fresh-environment proof that supported public software can be built, tested, validated, and prepared for release without private repositories, private packages, hidden schemas, private test data, or undocumented services.
 
 The technical mechanisms for these items are being assembled and tested during Phase 4. Meeting the threshold still requires a deliberate release-readiness reconciliation; it does not automatically publish anything.
@@ -142,6 +148,7 @@ After the release threshold is met and publication is separately authorized:
 - publish a versioned preview release;
 - announce what is actually available rather than pitching unfinished roadmap ideas;
 - publish compatibility and migration expectations with the release;
+- attach or reference the governed SBOM and verifiable provenance/attestation evidence;
 - open broader review and contribution channels if useful;
 - enable GitHub Discussions if it serves a real purpose;
 - use the transparent RFC process for consequential public-contract changes;
