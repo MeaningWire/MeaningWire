@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Build a deterministic, non-publishing MeaningWire release candidate archive.
+"""Build deterministic, non-publishing MeaningWire release-candidate evidence.
 
 The builder reads tracked blob contents from the exact checked-out Git commit,
-not from mutable working-tree files. It creates a normalized tar.gz archive,
-a content manifest, SHA-256 checksums, and release evidence. It does not tag,
-publish, upload, announce, or contact a package registry.
+not from mutable working-tree files. It creates a normalized tar.gz archive, a
+content manifest, a transitional SPDX 2.3 candidate SBOM, SHA-256 checksums,
+and release evidence. It does not tag, publish, attest, upload, announce, or
+contact a package registry.
 """
 
 from __future__ import annotations
@@ -20,6 +21,8 @@ import tarfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+import generate_spdx_sbom
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION_PATH = ROOT / "VERSION"
@@ -235,15 +238,35 @@ def build_release_candidate(
     archive_bytes = archive_path.read_bytes()
     archive_sha256 = _sha256(archive_bytes)
 
+    sbom_name = f"{PROJECT}-{version}.spdx.json"
+    sbom_path = destination / sbom_name
+    try:
+        sbom_result = generate_spdx_sbom.write_spdx_document(
+            sbom_path,
+            version=version,
+            source_commit=source_commit,
+            created=generate_spdx_sbom.commit_created_at(source_commit),
+            archive_name=archive_name,
+            archive_sha256=archive_sha256,
+        )
+    except (generate_spdx_sbom.SPDXGenerationError, ValueError, OSError) as exc:
+        raise ReleaseBuildError(f"could not generate candidate SBOM: {exc}") from exc
+    sbom_sha256 = sbom_result["sha256"]
+
     checksums_path = destination / "SHA256SUMS"
     checksums_path.write_text(
-        f"{archive_sha256}  {archive_name}\n",
+        "".join(
+            [
+                f"{archive_sha256}  {archive_name}\n",
+                f"{sbom_sha256}  {sbom_name}\n",
+            ]
+        ),
         encoding="utf-8",
         newline="\n",
     )
 
     evidence = {
-        "schema_version": 1,
+        "schema_version": 2,
         "project": PROJECT,
         "version": version,
         "maturity": MATURITY,
@@ -252,7 +275,18 @@ def build_release_candidate(
         "artifact_sha256": archive_sha256,
         "content_manifest_sha256": manifest_sha256,
         "tracked_file_count": len(blobs),
+        "sbom": {
+            "filename": sbom_name,
+            "sha256": sbom_sha256,
+            "format": "SPDX",
+            "version": "2.3",
+            "transitional": True,
+            "scope": "candidate archive plus governed validation dependency environment",
+        },
         "deterministic_archive": True,
+        "deterministic_sbom": True,
+        "sbom_schema_validation_performed": False,
+        "attestation_performed": False,
         "publication_performed": False,
         "runtime_network_access": False,
     }
@@ -261,16 +295,18 @@ def build_release_candidate(
 
     return {
         "archive": archive_path,
+        "sbom": sbom_path,
         "checksums": checksums_path,
         "evidence": evidence_path,
         "evidence_data": evidence,
         "manifest": manifest,
+        "sbom_document": sbom_result["document"],
     }
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Build a deterministic, non-publishing MeaningWire release candidate"
+        description="Build deterministic, non-publishing MeaningWire candidate evidence"
     )
     parser.add_argument(
         "--output-dir",
@@ -300,8 +336,9 @@ def main(argv: list[str] | None = None) -> int:
         "PASS: deterministic non-publishing release candidate built; "
         f"version={evidence['version']}; "
         f"source_commit={evidence['source_commit']}; "
-        f"sha256={evidence['artifact_sha256']}; "
-        "publication_performed=false."
+        f"artifact_sha256={evidence['artifact_sha256']}; "
+        f"sbom_sha256={evidence['sbom']['sha256']}; "
+        "publication_performed=false; attestation_performed=false."
     )
     return 0
 
