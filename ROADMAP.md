@@ -36,26 +36,29 @@ The repository is public during development, but the roadmap is not a request fo
 
 ## Phase 3 — Technical MVP
 
-Target capabilities:
+**Status: complete at the pre-release experimental baseline**
 
-- canonical core and domain conventions;
-- JSON Schema representation;
-- schema registry;
-- mapping registry;
-- mapping relationships: exact, equivalent, broader, narrower, derived, transformed, lossy, unsupported;
-- provenance and authority metadata;
-- validation tooling;
-- CLI;
-- adapter SDK;
-- two representative read-oriented reference adapters;
+The Phase 3 baseline now includes:
+
+- canonical envelope, reference, provenance, and authority primitives;
+- canonical domain conventions and the first experimental Identity / Party contract;
+- JSON Schema Draft 2020-12 representation and local-only validation;
+- public schema registry;
+- deterministic mapping registry and explicit ambiguity handling;
+- mapping relationship vocabulary: exact, equivalent, broader, narrower, derived, transformed, lossy, unsupported;
+- fail-closed identity-transform execution;
+- bounded simple-member mapping application without claiming full JSONPath support;
+- pre-release CLI for health, schema validation, mapping inspection, and the pinned proof;
+- read-only Adapter SDK;
+- local JSON object and transactional JSON Lines reference adapters;
 - deterministic tests;
-- synthetic / isolated downstream compatibility proof.
+- a pinned synthetic adapter-to-mapping-to-target-envelope compatibility proof.
 
 Phase 3 is governed by the [public implementation boundary](docs/architecture/public-implementation-boundary.md): supported MeaningWire behavior must be understandable, buildable, testable, and releasable without access to a proprietary or private MeaningWire codebase. Prior research, experiments, prototypes, and implementation lessons may inform the work, but the released public implementation must stand on its own.
 
-Current pre-release evidence includes the canonical envelope/provenance/authority substrate, Draft 2020-12 schema validation with local-only resolution, deterministic mapping registration and unique selection, fail-closed identity execution, bounded simple-member mapping application, a read-only CLI foundation, a read-only Adapter SDK, local JSON object and JSON Lines reference adapters, and a pinned synthetic adapter-to-mapping-to-target-envelope proof. These remain experimental and do not make a production-readiness or vendor-compatibility claim.
+Completing this baseline does not make the contracts stable, production-ready, vendor-certified, or complete across every planned domain. It means the minimum technical architecture is implemented well enough to shift the primary work toward release experience, documentation, evidence, and hardening.
 
-Initial canonical domains:
+Initial canonical domains remain:
 
 - Identity / Parties
 - Products / Services
@@ -67,17 +70,36 @@ Initial canonical domains:
 - Governance
 - Integration
 
+Additional domain contracts should be added when they improve a concrete interoperability path rather than merely to populate the list.
+
 ## Phase 4 — Documentation and release experience
+
+**Status: in progress**
+
+Current evidence already includes:
+
+- a concise public pre-release quickstart;
+- a canonical `VERSION` source using an explicit prerelease version;
+- a deterministic release-candidate builder sourced from exact Git object contents;
+- normalized candidate archives with embedded content manifests;
+- SHA-256 checksums and machine-readable release evidence;
+- CI proof that repeated candidate builds from the same commit are byte-identical in the tested Linux / CPython environment;
+- a manual-only, non-publishing release-candidate workflow with read-only repository permissions;
+- fresh-environment verification of the extracted candidate in an isolated Python environment before candidate evidence is considered verified.
+
+Remaining Phase 4 work includes:
 
 - evaluate Astro + Starlight against project needs;
 - accessible documentation site targeting WCAG 2.2 AA;
-- concise quickstart and installation path;
 - beginner, builder, researcher, and integration/enterprise entry paths;
-- architecture explanations and worked mapping examples;
+- architecture explanations and worked mapping examples beyond the current proof;
 - standards crosswalk documentation;
 - searchable schema and mapping reference;
-- reproducible release automation and release evidence;
-- release artifacts with documented version and provenance.
+- release-note and compatibility/migration expectations;
+- supply-chain evidence appropriate to a public preview, including SBOM/signing/provenance decisions;
+- an explicitly governed publication path from a verified candidate to a public GitHub Release.
+
+Public release publication remains outside the current automated release-agent boundary.
 
 ## Phase 5 — Real-world proof
 
@@ -101,13 +123,15 @@ Before MeaningWire is presented as something people should try or adopt, the pro
 - release provenance and artifacts;
 - installation and quickstart documentation that works without private context;
 - explicit statements of supported, experimental, and unfinished behavior;
-- a fresh-environment proof that supported public software can be built, tested, validated, and released without private repositories, private packages, hidden schemas, private test data, or undocumented services.
+- a fresh-environment proof that supported public software can be built, tested, validated, and prepared for release without private repositories, private packages, hidden schemas, private test data, or undocumented services.
 
-Meeting this threshold enables a release announcement. It does not imply production readiness or stable compatibility unless those claims are separately supported.
+The technical mechanisms for these items are being assembled and tested during Phase 4. Meeting the threshold still requires a deliberate release-readiness reconciliation; it does not automatically publish anything.
+
+Meeting this threshold enables a release decision and, if separately authorized, a release announcement. It does not imply production readiness or stable compatibility unless those claims are separately supported.
 
 ## Phase 6 — Public preview
 
-After the release threshold is met:
+After the release threshold is met and publication is separately authorized:
 
 - publish a versioned preview release;
 - announce what is actually available rather than pitching unfinished roadmap ideas;
