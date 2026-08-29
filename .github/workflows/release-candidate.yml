@@ -22,8 +22,16 @@ jobs:
       - name: Verify immutable workflow action pins
         run: python tools/validate_workflow_pins.py
 
-      - name: Install public validation dependency
-        run: python -m pip install --disable-pip-version-check -r requirements-validation.txt
+      - name: Verify validation dependency lock structure
+        run: python tools/validate_dependency_lock.py
+
+      - name: Install locked public validation environment
+        run: python -m pip install --disable-pip-version-check --require-hashes --only-binary=:all: -r requirements-validation.lock
+
+      - name: Verify locked validation environment
+        run: |
+          python -m pip check
+          python tools/validate_dependency_lock.py --verify-installed
 
       - name: Validate contracts and registries
         run: |
@@ -53,7 +61,7 @@ jobs:
           cmp dist/first/SHA256SUMS dist/second/SHA256SUMS
           cmp dist/first/release-evidence.json dist/second/release-evidence.json
 
-      - name: Verify extracted candidate in isolated environment
+      - name: Verify extracted candidate in isolated locked environment
         shell: bash
         run: |
           set -euo pipefail
@@ -67,10 +75,12 @@ jobs:
           mkdir -p "$RUNNER_TEMP/meaningwire-extracted"
           tar -xzf "$candidate" -C "$RUNNER_TEMP/meaningwire-extracted"
           python -m venv "$RUNNER_TEMP/meaningwire-venv"
-          "$RUNNER_TEMP/meaningwire-venv/bin/python" -m pip install --disable-pip-version-check -r "$RUNNER_TEMP/meaningwire-extracted/MeaningWire-${version}/requirements-validation.txt"
+          "$RUNNER_TEMP/meaningwire-venv/bin/python" -m pip install --disable-pip-version-check --require-hashes --only-binary=:all: -r "$RUNNER_TEMP/meaningwire-extracted/MeaningWire-${version}/requirements-validation.lock"
           (
             cd "$RUNNER_TEMP/meaningwire-extracted/MeaningWire-${version}"
             export PYTHONNOUSERSITE=1
+            "$RUNNER_TEMP/meaningwire-venv/bin/python" -m pip check
+            "$RUNNER_TEMP/meaningwire-venv/bin/python" tools/validate_dependency_lock.py --verify-installed
             "$RUNNER_TEMP/meaningwire-venv/bin/python" tools/meaningwire.py doctor --json
             "$RUNNER_TEMP/meaningwire-venv/bin/python" tools/meaningwire.py proof run --json
             "$RUNNER_TEMP/meaningwire-venv/bin/python" tools/meaningwire.py schema validate \
