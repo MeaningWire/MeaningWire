@@ -24,6 +24,8 @@ jobs:
         run: python tools/validate_contracts.py
       - name: Validate mapping registry integrity
         run: python tools/mapping_registry.py
+      - name: Verify generated schema and mapping references
+        run: python tools/generate_reference_docs.py --check
       - name: Smoke-test mapping execution foundation
         run: python tools/mapping_executor.py
       - name: Smoke-test deterministic mapping application
