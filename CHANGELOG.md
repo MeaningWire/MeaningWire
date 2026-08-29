@@ -31,6 +31,8 @@ The repository currently has a prerelease candidate version identifier, but **no
 - Initial Starlight entry pages for getting started, builders, model/research readers, integration/evaluation readers, and project-owned 404 recovery behavior without inventing a deployment URL.
 - Deterministically generated schema and mapping reference pages with CI drift detection.
 - Starlight-native generated schema and mapping reference pages derived from the same canonical registries, exposed through the documentation sidebar and verified in deterministic static output with the local Pagefind bundle.
+- Worked `How MeaningWire works` documentation grounded in the existing synthetic JSON-object adapter → source envelope → explicit mapping → target envelope proof, including transformation provenance and the explicit non-transfer of source approval/authority.
+- Fail-closed Pagefind UI CSS diagnostics that emit hashes and an exact diff if the asset diverges across repeated full documentation builds, without weakening complete-output reproducibility checks.
 - Explicit pre-release compatibility and migration policy covering schemas, mappings, execution behavior, CLI, Adapter SDK, artifact/evidence formats, and documentation.
 - Evidence-first release-notes template for future versioned publication.
 - Immutable full-commit-SHA pinning for external GitHub Actions with CI enforcement against floating references.
