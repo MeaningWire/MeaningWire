@@ -7,6 +7,7 @@ import tarfile
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
@@ -38,6 +39,86 @@ class CandidateArchiveIntegrityTests(unittest.TestCase):
         self.assertEqual(manifest["version"], evidence["version"])
         self.assertEqual(validation["file_count"], len(files) - 1)
         self.assertIn("RELEASE-MANIFEST.json", files)
+
+    def test_archive_reader_does_not_materialize_getmembers_list(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "candidate.tar.gz"
+            self._write_tar(
+                path,
+                [(tarfile.TarInfo("MeaningWire-0.1.0-alpha.0/README.md"), b"ok")],
+            )
+            with mock.patch.object(
+                tarfile.TarFile,
+                "getmembers",
+                side_effect=AssertionError("getmembers must not be used"),
+            ):
+                files = integrity.read_archive(path, "0.1.0-alpha.0")
+            self.assertEqual(files, {"README.md": b"ok"})
+
+    def test_compressed_archive_size_limit_is_enforced_before_decompression(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "candidate.tar.gz"
+            self._write_tar(
+                path,
+                [(tarfile.TarInfo("MeaningWire-0.1.0-alpha.0/README.md"), b"ok")],
+            )
+            with mock.patch.object(integrity, "MAX_ARCHIVE_BYTES", 1):
+                with self.assertRaisesRegex(integrity.CandidateArchiveError, "compressed size"):
+                    integrity.read_archive(path, "0.1.0-alpha.0")
+
+    def test_decompressed_stream_limit_is_enforced(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "candidate.tar.gz"
+            self._write_tar(
+                path,
+                [(tarfile.TarInfo("MeaningWire-0.1.0-alpha.0/README.md"), b"ok")],
+            )
+            with mock.patch.object(integrity, "MAX_DECOMPRESSED_STREAM_BYTES", 511):
+                with self.assertRaisesRegex(integrity.CandidateArchiveError, "decompressed stream"):
+                    integrity.read_archive(path, "0.1.0-alpha.0")
+
+    def test_member_count_limit_is_enforced_while_streaming(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "candidate.tar.gz"
+            prefix = "MeaningWire-0.1.0-alpha.0/"
+            self._write_tar(
+                path,
+                [
+                    (tarfile.TarInfo(prefix + "one.txt"), b"1"),
+                    (tarfile.TarInfo(prefix + "two.txt"), b"2"),
+                ],
+            )
+            with mock.patch.object(integrity, "MAX_MEMBER_COUNT", 1):
+                with self.assertRaisesRegex(integrity.CandidateArchiveError, "member count"):
+                    integrity.read_archive(path, "0.1.0-alpha.0")
+
+    def test_per_member_uncompressed_size_limit_is_enforced_before_read(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "candidate.tar.gz"
+            self._write_tar(
+                path,
+                [(tarfile.TarInfo("MeaningWire-0.1.0-alpha.0/README.md"), b"four")],
+            )
+            with mock.patch.object(integrity, "MAX_MEMBER_BYTES", 3):
+                with self.assertRaisesRegex(integrity.CandidateArchiveError, "member exceeds"):
+                    integrity.read_archive(path, "0.1.0-alpha.0")
+
+    def test_total_uncompressed_file_size_limit_is_enforced_before_read(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "candidate.tar.gz"
+            prefix = "MeaningWire-0.1.0-alpha.0/"
+            self._write_tar(
+                path,
+                [
+                    (tarfile.TarInfo(prefix + "one.txt"), b"123"),
+                    (tarfile.TarInfo(prefix + "two.txt"), b"456"),
+                ],
+            )
+            with mock.patch.object(integrity, "MAX_TOTAL_FILE_BYTES", 5):
+                with self.assertRaisesRegex(
+                    integrity.CandidateArchiveError, "total uncompressed file size"
+                ):
+                    integrity.read_archive(path, "0.1.0-alpha.0")
 
     def test_duplicate_archive_member_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
