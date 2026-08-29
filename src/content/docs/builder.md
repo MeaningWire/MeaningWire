@@ -34,4 +34,4 @@ The governed CI path performs additional candidate, dependency-lock, SBOM, extra
 
 ## Public implementation rule
 
-A supported MeaningWire release must remain understandable, buildable, testable, validateable, and releasable without access to private MeaningWire code or hidden infrastructure.
+A supported MeaningWire release must remain understandable, buildable, testable, validatable, and releasable without access to private MeaningWire code or hidden infrastructure.
