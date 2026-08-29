@@ -31,13 +31,13 @@ GOOD_HTML = """<!doctype html>
 
 
 class DocsAccessibilityTests(unittest.TestCase):
-    def _validate(self, pages: dict[str, str]) -> list[str]:
+    def _validate(self, files: dict[str, str]) -> list[str]:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            for relative, html in pages.items():
+            for relative, content in files.items():
                 path = root / relative
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(html, encoding="utf-8")
+                path.write_text(content, encoding="utf-8")
             return validate_docs_accessibility.validate(root)
 
     def test_good_static_page_passes(self) -> None:
@@ -57,7 +57,7 @@ class DocsAccessibilityTests(unittest.TestCase):
         self.assertTrue(any("jumps from h1 to h3" in error for error in errors))
         self.assertTrue(any("missing alt attribute" in error for error in errors))
 
-    def test_remote_subresource_and_autoplay_fail_closed(self) -> None:
+    def test_remote_html_subresource_and_autoplay_fail_closed(self) -> None:
         broken = GOOD_HTML.replace(
             '<link rel="stylesheet" href="/_astro/site.css">',
             '<link rel="stylesheet" href="https://example.invalid/site.css">',
@@ -67,6 +67,15 @@ class DocsAccessibilityTests(unittest.TestCase):
         errors = self._validate({"index.html": broken})
         self.assertTrue(any("remote subresource" in error for error in errors))
         self.assertTrue(any("autoplay media" in error for error in errors))
+
+    def test_remote_css_subresource_fails_closed(self) -> None:
+        errors = self._validate(
+            {
+                "index.html": GOOD_HTML,
+                "_astro/site.css": '@font-face{src:url("https://example.invalid/font.woff2")}',
+            }
+        )
+        self.assertTrue(any("built CSS references a remote" in error for error in errors))
 
     def test_duplicate_titles_fail_closed(self) -> None:
         errors = self._validate({"index.html": GOOD_HTML, "second/index.html": GOOD_HTML})
