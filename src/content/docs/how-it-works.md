@@ -80,7 +80,7 @@ It declares one bounded relationship:
 
 The currently implemented path grammar is deliberately smaller than full JSONPath. This proof uses simple object-member paths only. Unsupported path syntax and unimplemented transform kinds fail closed rather than being guessed.
 
-See the generated [mapping reference](./reference/mappings/) for the registry-derived view.
+See the generated [mapping reference](../reference/mappings/) for the registry-derived view.
 
 ## 3. Build the target envelope
 
@@ -167,4 +167,4 @@ python tools/meaningwire.py proof run --json
 
 The same path is also exercised in deterministic tests and CI. The implementation is in `tools/interoperability_pipeline.py`; the synthetic mapping is in `mappings/definitions/example-crm-email.json`; and the source fixture is in `tests/fixtures/adapters/json-object-record.json`.
 
-For the broader implementation boundary, continue with [Builder](./builder/) and the generated [schema reference](./reference/schemas/).
+For the broader implementation boundary, continue with [Builder](../builder/) and the generated [schema reference](../reference/schemas/).
