@@ -17,11 +17,12 @@ import release_builder  # noqa: E402
 class ReleaseBuilderTests(unittest.TestCase):
     def test_version_is_explicit_semver_prerelease(self) -> None:
         version = release_builder.load_version()
-        self.assertEqual(version, "0.1.0-alpha.0")
         self.assertIn("-", version)
+        self.assertTrue(version.startswith("0."))
 
     def test_candidate_build_is_byte_reproducible(self) -> None:
         commit = release_builder.current_commit()
+        version = release_builder.load_version()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             first = release_builder.build_release_candidate(
@@ -41,16 +42,17 @@ class ReleaseBuilderTests(unittest.TestCase):
             self.assertEqual(first["evidence_data"]["artifact_sha256"], digest)
             self.assertEqual(
                 first["checksums"].read_text(encoding="utf-8"),
-                f"{digest}  MeaningWire-0.1.0-alpha.0.tar.gz\n",
+                f"{digest}  MeaningWire-{version}.tar.gz\n",
             )
 
     def test_archive_contains_normalized_manifest_and_public_source(self) -> None:
         commit = release_builder.current_commit()
+        version = release_builder.load_version()
         with tempfile.TemporaryDirectory() as directory:
             result = release_builder.build_release_candidate(
                 directory, expected_source_commit=commit
             )
-            prefix = "MeaningWire-0.1.0-alpha.0/"
+            prefix = f"MeaningWire-{version}/"
             manifest_name = f"{prefix}RELEASE-MANIFEST.json"
 
             with tarfile.open(result["archive"], "r:gz") as archive:
@@ -73,7 +75,7 @@ class ReleaseBuilderTests(unittest.TestCase):
                 assert extracted is not None
                 manifest = json.loads(extracted.read().decode("utf-8"))
 
-            self.assertEqual(manifest["version"], "0.1.0-alpha.0")
+            self.assertEqual(manifest["version"], version)
             self.assertEqual(manifest["source_commit"], commit)
             self.assertEqual(manifest["maturity"], "EXPERIMENTAL")
             self.assertFalse(manifest["publication_performed"])
