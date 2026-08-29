@@ -95,6 +95,36 @@ class MeaningWireCLITests(unittest.TestCase):
         self.assertEqual(payload["status"], "ERROR")
         self.assertIn("no mapping matches", payload["error"])
 
+    def test_proof_run_json_matches_pinned_target(self) -> None:
+        code, stdout, stderr = self.run_cli(["proof", "run", "--json"])
+        self.assertEqual(code, 0, stderr)
+        self.assertEqual(stderr, "")
+        payload = json.loads(stdout)
+        expected = json.loads(
+            (
+                ROOT
+                / "tests"
+                / "fixtures"
+                / "proofs"
+                / "json-object-crm-email-target.json"
+            ).read_text(encoding="utf-8")
+        )
+        self.assertEqual(payload["status"], "PASS")
+        self.assertFalse(payload["network_access"])
+        self.assertEqual(payload["proof"]["target_envelope"], expected)
+        self.assertEqual(
+            payload["proof"]["mapping"]["mapping_id"]["id"],
+            "example-crm-email",
+        )
+
+    def test_proof_run_text_is_explicitly_experimental(self) -> None:
+        code, stdout, stderr = self.run_cli(["proof", "run"])
+        self.assertEqual(code, 0, stderr)
+        self.assertEqual(stderr, "")
+        self.assertIn("PASS: EXPERIMENTAL synthetic interoperability proof", stdout)
+        self.assertIn("target approval not asserted", stdout)
+        self.assertIn("network access disabled", stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
