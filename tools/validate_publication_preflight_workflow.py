@@ -17,11 +17,12 @@ REQUIRED_SNIPPETS = (
     "python tools/validate_workflow_pins.py",
     "python tools/release_publication_preflight.py",
     "python tools/release_readiness.py",
-    "--require-ready",
+    "publication_performed=false",
     "Publication preflight only.",
 )
 
 FORBIDDEN_PATTERNS = (
+    r"--require-ready",
     r"\bgh\s+release\b",
     r"\bgit\s+tag\b",
     r"\bgit\s+push\b",
@@ -57,7 +58,7 @@ def validate_text(text: str) -> list[str]:
             errors.append(f"required preflight guard is missing: {snippet}")
     for pattern in FORBIDDEN_PATTERNS:
         if re.search(pattern, text, flags=re.IGNORECASE):
-            errors.append(f"publishing-capable construct is forbidden in preflight: {pattern}")
+            errors.append(f"publishing-capable or publication-authorizing construct is forbidden in preflight: {pattern}")
     return errors
 
 
@@ -81,7 +82,7 @@ def main() -> int:
         for error in errors:
             print(f"ERROR: {error}")
         return 2
-    print("PASS: publication preflight remains manual-only, read-only, exact-source-bound, readiness-gated, and non-publishing.")
+    print("PASS: publication preflight remains manual-only, read-only, exact-source-bound, readiness-reporting, and non-publishing.")
     return 0
 
 
