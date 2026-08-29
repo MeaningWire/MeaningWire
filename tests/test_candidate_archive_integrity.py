@@ -58,7 +58,10 @@ class CandidateArchiveIntegrityTests(unittest.TestCase):
     def test_compressed_archive_size_limit_is_enforced_before_decompression(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "candidate.tar.gz"
-            self._write_tar(path, [(tarfile.TarInfo("MeaningWire-0.1.0-alpha.0/README.md"), b"ok")])
+            self._write_tar(
+                path,
+                [(tarfile.TarInfo("MeaningWire-0.1.0-alpha.0/README.md"), b"ok")],
+            )
             with mock.patch.object(integrity, "MAX_ARCHIVE_BYTES", 1):
                 with self.assertRaisesRegex(integrity.CandidateArchiveError, "compressed size"):
                     integrity.read_archive(path, "0.1.0-alpha.0")
@@ -66,7 +69,10 @@ class CandidateArchiveIntegrityTests(unittest.TestCase):
     def test_decompressed_stream_limit_is_enforced(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "candidate.tar.gz"
-            self._write_tar(path, [(tarfile.TarInfo("MeaningWire-0.1.0-alpha.0/README.md"), b"ok")])
+            self._write_tar(
+                path,
+                [(tarfile.TarInfo("MeaningWire-0.1.0-alpha.0/README.md"), b"ok")],
+            )
             with mock.patch.object(integrity, "MAX_DECOMPRESSED_STREAM_BYTES", 511):
                 with self.assertRaisesRegex(integrity.CandidateArchiveError, "decompressed stream"):
                     integrity.read_archive(path, "0.1.0-alpha.0")
@@ -75,7 +81,13 @@ class CandidateArchiveIntegrityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "candidate.tar.gz"
             prefix = "MeaningWire-0.1.0-alpha.0/"
-            self._write_tar(path, [(tarfile.TarInfo(prefix + "one.txt"), b"1"), (tarfile.TarInfo(prefix + "two.txt"), b"2")])
+            self._write_tar(
+                path,
+                [
+                    (tarfile.TarInfo(prefix + "one.txt"), b"1"),
+                    (tarfile.TarInfo(prefix + "two.txt"), b"2"),
+                ],
+            )
             with mock.patch.object(integrity, "MAX_MEMBER_COUNT", 1):
                 with self.assertRaisesRegex(integrity.CandidateArchiveError, "member count"):
                     integrity.read_archive(path, "0.1.0-alpha.0")
@@ -83,7 +95,10 @@ class CandidateArchiveIntegrityTests(unittest.TestCase):
     def test_per_member_uncompressed_size_limit_is_enforced_before_read(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "candidate.tar.gz"
-            self._write_tar(path, [(tarfile.TarInfo("MeaningWire-0.1.0-alpha.0/README.md"), b"four")])
+            self._write_tar(
+                path,
+                [(tarfile.TarInfo("MeaningWire-0.1.0-alpha.0/README.md"), b"four")],
+            )
             with mock.patch.object(integrity, "MAX_MEMBER_BYTES", 3):
                 with self.assertRaisesRegex(integrity.CandidateArchiveError, "member exceeds"):
                     integrity.read_archive(path, "0.1.0-alpha.0")
@@ -92,16 +107,27 @@ class CandidateArchiveIntegrityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "candidate.tar.gz"
             prefix = "MeaningWire-0.1.0-alpha.0/"
-            self._write_tar(path, [(tarfile.TarInfo(prefix + "one.txt"), b"123"), (tarfile.TarInfo(prefix + "two.txt"), b"456")])
+            self._write_tar(
+                path,
+                [
+                    (tarfile.TarInfo(prefix + "one.txt"), b"123"),
+                    (tarfile.TarInfo(prefix + "two.txt"), b"456"),
+                ],
+            )
             with mock.patch.object(integrity, "MAX_TOTAL_FILE_BYTES", 5):
-                with self.assertRaisesRegex(integrity.CandidateArchiveError, "total uncompressed file size"):
+                with self.assertRaisesRegex(
+                    integrity.CandidateArchiveError, "total uncompressed file size"
+                ):
                     integrity.read_archive(path, "0.1.0-alpha.0")
 
     def test_duplicate_archive_member_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "candidate.tar.gz"
             name = "MeaningWire-0.1.0-alpha.0/README.md"
-            self._write_tar(path, [(tarfile.TarInfo(name), b"first"), (tarfile.TarInfo(name), b"second")])
+            self._write_tar(
+                path,
+                [(tarfile.TarInfo(name), b"first"), (tarfile.TarInfo(name), b"second")],
+            )
             with self.assertRaisesRegex(integrity.CandidateArchiveError, "duplicate candidate archive member"):
                 integrity.read_archive(path, "0.1.0-alpha.0")
 
@@ -131,28 +157,45 @@ class CandidateArchiveIntegrityTests(unittest.TestCase):
     def test_duplicate_manifest_path_is_rejected(self) -> None:
         data = b"hello"
         digest = __import__("hashlib").sha256(data).hexdigest()
-        record = {"path": "README.md", "size": len(data), "sha256": digest, "git_object": "a" * 40, "mode": "0644"}
+        record = {
+            "path": "README.md",
+            "size": len(data),
+            "sha256": digest,
+            "git_object": "a" * 40,
+            "mode": "0644",
+        }
         manifest = {
-            "project": "MeaningWire", "version": "0.1.0-alpha.0", "source_commit": "b" * 40,
-            "publication_performed": False, "runtime_network_access": False, "files": [record, dict(record)],
+            "project": "MeaningWire",
+            "version": "0.1.0-alpha.0",
+            "source_commit": "b" * 40,
+            "publication_performed": False,
+            "runtime_network_access": False,
+            "files": [record, dict(record)],
         }
         with self.assertRaisesRegex(integrity.CandidateArchiveError, "duplicate release manifest path"):
             integrity.validate_manifest(
                 manifest,
                 {"VERSION": b"0.1.0-alpha.0\n", "README.md": data, "RELEASE-MANIFEST.json": b"{}"},
-                version="0.1.0-alpha.0", source_commit="b" * 40,
+                version="0.1.0-alpha.0",
+                source_commit="b" * 40,
             )
 
     def test_manifest_hash_size_and_unlisted_file_mismatches_are_rejected(self) -> None:
         data = b"hello"
         base_record = {
-            "path": "README.md", "size": len(data),
+            "path": "README.md",
+            "size": len(data),
             "sha256": __import__("hashlib").sha256(data).hexdigest(),
-            "git_object": "a" * 40, "mode": "0644",
+            "git_object": "a" * 40,
+            "mode": "0644",
         }
         base_manifest = {
-            "project": "MeaningWire", "version": "0.1.0-alpha.0", "source_commit": "b" * 40,
-            "publication_performed": False, "runtime_network_access": False, "files": [base_record],
+            "project": "MeaningWire",
+            "version": "0.1.0-alpha.0",
+            "source_commit": "b" * 40,
+            "publication_performed": False,
+            "runtime_network_access": False,
+            "files": [base_record],
         }
         archive_files = {"VERSION": b"0.1.0-alpha.0\n", "README.md": data, "RELEASE-MANIFEST.json": b"{}"}
 
@@ -168,8 +211,10 @@ class CandidateArchiveIntegrityTests(unittest.TestCase):
 
         with self.assertRaisesRegex(integrity.CandidateArchiveError, "unlisted archive files"):
             integrity.validate_manifest(
-                base_manifest, {**archive_files, "extra.txt": b"surprise"},
-                version="0.1.0-alpha.0", source_commit="b" * 40,
+                base_manifest,
+                {**archive_files, "extra.txt": b"surprise"},
+                version="0.1.0-alpha.0",
+                source_commit="b" * 40,
             )
 
     def test_embedded_manifest_digest_mismatch_is_rejected(self) -> None:
@@ -178,8 +223,10 @@ class CandidateArchiveIntegrityTests(unittest.TestCase):
             evidence = json.loads(result["evidence"].read_text(encoding="utf-8"))
             with self.assertRaisesRegex(integrity.CandidateArchiveError, "manifest digest"):
                 integrity.inspect_candidate(
-                    result["archive"], version=evidence["version"],
-                    source_commit=evidence["source_commit"], expected_manifest_sha256="0" * 64,
+                    result["archive"],
+                    version=evidence["version"],
+                    source_commit=evidence["source_commit"],
+                    expected_manifest_sha256="0" * 64,
                 )
 
 
