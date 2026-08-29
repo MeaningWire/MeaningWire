@@ -35,15 +35,56 @@ class ReleaseBuilderTests(unittest.TestCase):
             first_bytes = first["archive"].read_bytes()
             second_bytes = second["archive"].read_bytes()
             self.assertEqual(first_bytes, second_bytes)
+            self.assertEqual(first["sbom"].read_bytes(), second["sbom"].read_bytes())
             self.assertEqual(first["checksums"].read_bytes(), second["checksums"].read_bytes())
             self.assertEqual(first["evidence"].read_bytes(), second["evidence"].read_bytes())
 
-            digest = hashlib.sha256(first_bytes).hexdigest()
-            self.assertEqual(first["evidence_data"]["artifact_sha256"], digest)
+            archive_digest = hashlib.sha256(first_bytes).hexdigest()
+            sbom_digest = hashlib.sha256(first["sbom"].read_bytes()).hexdigest()
+            self.assertEqual(first["evidence_data"]["artifact_sha256"], archive_digest)
+            self.assertEqual(first["evidence_data"]["sbom"]["sha256"], sbom_digest)
+            self.assertEqual(first["evidence_data"]["schema_version"], 2)
+            self.assertFalse(first["evidence_data"]["sbom_schema_validation_performed"])
+            self.assertFalse(first["evidence_data"]["attestation_performed"])
             self.assertEqual(
                 first["checksums"].read_text(encoding="utf-8"),
-                f"{digest}  MeaningWire-{version}.tar.gz\n",
+                (
+                    f"{archive_digest}  MeaningWire-{version}.tar.gz\n"
+                    f"{sbom_digest}  MeaningWire-{version}.spdx.json\n"
+                ),
             )
+
+    def test_sbom_is_bound_to_candidate_and_locked_environment(self) -> None:
+        commit = release_builder.current_commit()
+        version = release_builder.load_version()
+        with tempfile.TemporaryDirectory() as directory:
+            result = release_builder.build_release_candidate(
+                directory, expected_source_commit=commit
+            )
+            sbom = json.loads(result["sbom"].read_text(encoding="utf-8"))
+            self.assertEqual(sbom["spdxVersion"], "SPDX-2.3")
+            self.assertEqual(sbom["dataLicense"], "CC0-1.0")
+            self.assertEqual(
+                sbom["documentNamespace"],
+                f"urn:meaningwire:spdx:release-candidate:{version}:{commit}",
+            )
+            self.assertEqual(sbom["documentDescribes"], ["SPDXRef-Package-MeaningWire"])
+            packages = {package["SPDXID"]: package for package in sbom["packages"]}
+            self.assertEqual(len(packages), 7)
+            root = packages["SPDXRef-Package-MeaningWire"]
+            self.assertEqual(root["versionInfo"], version)
+            self.assertEqual(root["packageFileName"], f"MeaningWire-{version}.tar.gz")
+            self.assertEqual(
+                root["checksums"],
+                [
+                    {
+                        "algorithm": "SHA256",
+                        "checksumValue": result["evidence_data"]["artifact_sha256"],
+                    }
+                ],
+            )
+            self.assertIn("SPDXRef-Package-jsonschema", packages)
+            self.assertIn("SPDXRef-Package-rpds-py", packages)
 
     def test_archive_contains_normalized_manifest_and_public_source(self) -> None:
         commit = release_builder.current_commit()
@@ -92,6 +133,9 @@ class ReleaseBuilderTests(unittest.TestCase):
                 "docs/quickstart.md",
                 "tools/meaningwire.py",
                 "tools/release_builder.py",
+                "tools/generate_spdx_sbom.py",
+                "tools/fetch_spdx_schema.py",
+                "tools/validate_spdx_sbom.py",
                 "tools/validate_dependency_lock.py",
                 "schemas/registry.json",
                 "mappings/registry.json",
