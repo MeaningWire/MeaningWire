@@ -53,6 +53,8 @@ Target capabilities:
 
 Phase 3 is governed by the [public implementation boundary](docs/architecture/public-implementation-boundary.md): supported MeaningWire behavior must be understandable, buildable, testable, and releasable without access to a proprietary or private MeaningWire codebase. Prior research, experiments, prototypes, and implementation lessons may inform the work, but the released public implementation must stand on its own.
 
+Current pre-release evidence includes the canonical envelope/provenance/authority substrate, Draft 2020-12 schema validation with local-only resolution, deterministic mapping registration and unique selection, fail-closed identity execution, bounded simple-member mapping application, a read-only CLI foundation, a read-only Adapter SDK, local JSON object and JSON Lines reference adapters, and a pinned synthetic adapter-to-mapping-to-target-envelope proof. These remain experimental and do not make a production-readiness or vendor-compatibility claim.
+
 Initial canonical domains:
 
 - Identity / Parties

@@ -1,0 +1,40 @@
+{
+  "contract": {
+    "namespace": "urn:example:contract",
+    "id": "party",
+    "version": "0.0.1"
+  },
+  "record": {
+    "namespace": "urn:example:record",
+    "id": "party-CUST-001"
+  },
+  "data": {
+    "contact": {
+      "email": "person@example.invalid"
+    }
+  },
+  "provenance": {
+    "source": {
+      "namespace": "urn:meaningwire:example-source",
+      "id": "synthetic-crm-json-object",
+      "version": "1"
+    },
+    "source_version": "1",
+    "transformations": [
+      {
+        "operation": "meaningwire.mapping.apply",
+        "mapping": {
+          "namespace": "urn:meaningwire:mapping",
+          "id": "example-crm-email",
+          "version": "0.1.0"
+        }
+      }
+    ]
+  },
+  "authority": {
+    "kind": "none",
+    "approval": "not_asserted",
+    "basis": "MeaningWire mapping application does not transfer source approval or authority to the target representation."
+  },
+  "maturity": "EXPERIMENTAL"
+}
