@@ -6,7 +6,7 @@ MeaningWire is still in pre-release development. This quickstart is for evaluati
 
 - Git
 - Python 3.12
-- network access only for the one-time installation of the pinned public validation dependency
+- network access only for the one-time installation of public validation dependencies
 
 The MeaningWire proof itself uses repository-local code and synthetic fixtures and performs no network access.
 
@@ -17,13 +17,27 @@ git clone https://github.com/MeaningWire/MeaningWire.git
 cd MeaningWire
 ```
 
-## 2. Install the public validation dependency
+## 2. Install the validation environment
+
+For the environment that matches MeaningWire's governed candidate proof—**CPython 3.12 on Linux x86-64**—use the exact hashed lock:
+
+```text
+python -m pip install --require-hashes --only-binary=:all: -r requirements-validation.lock
+python -m pip check
+python tools/validate_dependency_lock.py --verify-installed
+```
+
+The lock contains the complete currently resolved validation dependency graph and accepted wheel SHA-256 hashes for the tested candidate target. CI installs it from a clean environment and fails closed if a package version, transitive dependency, or selected artifact hash does not match.
+
+For exploratory evaluation on another operating system or architecture, the direct input remains:
 
 ```text
 python -m pip install -r requirements-validation.txt
 ```
 
-The dependency is used for JSON Schema Draft 2020-12 validation. No private package index or MeaningWire service is required.
+That second path allows the public package index to resolve compatible transitive packages for the local platform. It is useful for evaluation, but it is **not** the exact dependency environment represented by the current Linux x86-64 candidate evidence.
+
+The dependencies are used for JSON Schema Draft 2020-12 validation. No private package index or MeaningWire service is required.
 
 ## 3. Check repository health
 
@@ -91,6 +105,8 @@ python tools/meaningwire.py schema validate \
 
 It demonstrates that the current public repository can validate its registered contracts and execute one deterministic synthetic adapter-to-mapping interoperability path without private code, private schemas, credentials, vendor services, or hidden test data.
 
-It does **not** prove production readiness, vendor compatibility, arbitrary conversion support, full JSONPath support, authenticated integration, or stable API compatibility.
+On the documented Linux x86-64 / CPython 3.12 candidate target, CI additionally proves that the validation environment can be installed from exact package versions and accepted artifact hashes from the extracted candidate itself.
+
+It does **not** prove production readiness, vendor compatibility, arbitrary conversion support, full JSONPath support, authenticated integration, stable API compatibility, or an identical dependency artifact set on untested operating systems/architectures.
 
 The `proof run` command intentionally has no user-supplied mapping, source, destination, credential, or network arguments. General-purpose conversion remains a separate future capability that must earn its own contract and safety boundaries.
