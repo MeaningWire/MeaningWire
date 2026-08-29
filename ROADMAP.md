@@ -92,6 +92,8 @@ Current evidence already includes:
 - initial Starlight entry paths for getting started, builders, model/research readers, and integration/evaluation readers, plus a project-owned pre-deployment 404 page;
 - a low-cognitive-load documentation information architecture for beginner, builder, model/research, and evaluation/integration entry paths;
 - deterministic human-readable schema and mapping references generated from canonical registries, with CI drift detection so generated documentation cannot silently diverge from the JSON source of truth;
+- generated schema and mapping references integrated into Starlight navigation and local Pagefind search while the canonical JSON registries remain authoritative;
+- exact-head CI proof that both generated reference routes render canonical registry identifiers and remain byte-identical across repeated complete static builds;
 - an explicit pre-release compatibility policy that classifies additive, corrective, breaking, security-sensitive, and internal-only changes across named compatibility surfaces;
 - migration-note requirements for breaking changes and an evidence-first release-note template for future versioned publication;
 - a reconciled unreleased changelog that distinguishes candidate builds from published releases;
@@ -114,7 +116,6 @@ Remaining Phase 4 work includes:
 - deepen the beginner, builder, researcher/model, and integration/evaluation paths as the public surface grows;
 - architecture explanations and worked mapping examples beyond the current proof;
 - standards crosswalk documentation;
-- integrate the generated schema and mapping references into Starlight navigation and local static-site search;
 - evaluate and prove an eventual SPDX 3 migration path without weakening current deterministic SBOM verification;
 - implement the separately governed manual publication workflow with fail-closed readiness enforcement;
 - implement release-only build/SBOM attestations and documented public verification inside that publication boundary;
