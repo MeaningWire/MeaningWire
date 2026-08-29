@@ -22,6 +22,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import candidate_archive_integrity
 import generate_spdx_sbom
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -89,11 +90,23 @@ def _safe_repo_path(path: str) -> str:
     return path
 
 
+def _git_blob_size(object_sha: str, path: str) -> int:
+    try:
+        raw = _git_bytes("cat-file", "-s", object_sha).decode("ascii", errors="strict").strip()
+        size = int(raw)
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise ReleaseBuildError(f"could not determine tracked blob size for {path}") from exc
+    if size < 0:
+        raise ReleaseBuildError(f"invalid tracked blob size for {path}")
+    return size
+
+
 def tracked_blobs() -> list[TrackedBlob]:
-    """Return regular tracked blobs from HEAD in deterministic path order."""
+    """Return bounded regular tracked blobs from HEAD in deterministic path order."""
 
     raw = _git_bytes("ls-tree", "-r", "-z", "--full-tree", "HEAD")
     blobs: list[TrackedBlob] = []
+    total_bytes = 0
     for entry in raw.split(b"\0"):
         if not entry:
             continue
@@ -115,10 +128,30 @@ def tracked_blobs() -> list[TrackedBlob]:
             )
         if not re.fullmatch(r"[0-9a-f]{40}", object_sha):
             raise ReleaseBuildError(f"invalid Git object SHA for {path}")
+        if len(blobs) + 2 > candidate_archive_integrity.MAX_MEMBER_COUNT:
+            raise ReleaseBuildError(
+                "tracked file count plus release manifest exceeds candidate member safety limit "
+                f"({candidate_archive_integrity.MAX_MEMBER_COUNT})"
+            )
+
+        size = _git_blob_size(object_sha, path)
+        if size > candidate_archive_integrity.MAX_MEMBER_BYTES:
+            raise ReleaseBuildError(
+                f"tracked file exceeds candidate member safety limit: {path} "
+                f"({candidate_archive_integrity.MAX_MEMBER_BYTES} bytes)"
+            )
+        if total_bytes + size > candidate_archive_integrity.MAX_TOTAL_FILE_BYTES:
+            raise ReleaseBuildError(
+                "tracked source bytes exceed candidate total-file safety limit before loading "
+                f"({candidate_archive_integrity.MAX_TOTAL_FILE_BYTES} bytes)"
+            )
 
         data = _git_bytes("cat-file", "blob", object_sha)
+        if len(data) != size:
+            raise ReleaseBuildError(f"tracked blob size changed unexpectedly for {path}")
         mode = 0o755 if mode_text == "100755" else 0o644
         blobs.append(TrackedBlob(path=path, mode=mode, object_sha=object_sha, data=data))
+        total_bytes += size
 
     if not blobs:
         raise ReleaseBuildError("HEAD contains no releasable tracked files")
@@ -155,6 +188,25 @@ def build_content_manifest(
             for blob in blobs
         ],
     }
+
+
+def _validate_generated_manifest_limits(blobs: list[TrackedBlob], manifest_bytes: bytes) -> None:
+    if len(blobs) + 1 > candidate_archive_integrity.MAX_MEMBER_COUNT:
+        raise ReleaseBuildError(
+            "candidate member count exceeds safety limit after adding release manifest "
+            f"({candidate_archive_integrity.MAX_MEMBER_COUNT})"
+        )
+    if len(manifest_bytes) > candidate_archive_integrity.MAX_MEMBER_BYTES:
+        raise ReleaseBuildError(
+            "release manifest exceeds candidate member safety limit "
+            f"({candidate_archive_integrity.MAX_MEMBER_BYTES} bytes)"
+        )
+    total_bytes = sum(len(blob.data) for blob in blobs) + len(manifest_bytes)
+    if total_bytes > candidate_archive_integrity.MAX_TOTAL_FILE_BYTES:
+        raise ReleaseBuildError(
+            "tracked source plus release manifest exceeds candidate total-file safety limit "
+            f"({candidate_archive_integrity.MAX_TOTAL_FILE_BYTES} bytes)"
+        )
 
 
 def _add_bytes(
@@ -223,6 +275,7 @@ def build_release_candidate(
     blobs = tracked_blobs()
     manifest = build_content_manifest(blobs, version=version, source_commit=source_commit)
     manifest_bytes = _json_bytes(manifest)
+    _validate_generated_manifest_limits(blobs, manifest_bytes)
     manifest_sha256 = _sha256(manifest_bytes)
 
     destination = Path(output_dir).expanduser().resolve()
@@ -235,8 +288,14 @@ def build_release_candidate(
         version=version,
         manifest_bytes=manifest_bytes,
     )
-    archive_bytes = archive_path.read_bytes()
-    archive_sha256 = _sha256(archive_bytes)
+    try:
+        archive_sha256 = candidate_archive_integrity.archive_sha256(archive_path)
+    except candidate_archive_integrity.CandidateArchiveError as exc:
+        try:
+            archive_path.unlink()
+        except OSError:
+            pass
+        raise ReleaseBuildError(f"generated candidate exceeds archive safety envelope: {exc}") from exc
 
     sbom_name = f"{PROJECT}-{version}.spdx.json"
     sbom_path = destination / sbom_name
