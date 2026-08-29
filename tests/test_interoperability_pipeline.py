@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -43,23 +44,15 @@ class InteroperabilityPipelineTests(unittest.TestCase):
     def target_record(self) -> dict:
         return {"namespace": "urn:example:record", "id": "party-CUST-001"}
 
-    def test_complete_synthetic_proof(self) -> None:
+    def test_complete_synthetic_proof_matches_pinned_expected_target(self) -> None:
         proof = interoperability_pipeline.run_synthetic_proof()
-        source = proof["source_envelope"]
-        target = proof["target_envelope"]
-        self.assertEqual(source["data"]["email"], "person@example.invalid")
-        self.assertEqual(
-            target["data"], {"contact": {"email": "person@example.invalid"}}
+        expected_path = (
+            ROOT / "tests" / "fixtures" / "proofs" / "json-object-crm-email-target.json"
         )
-        self.assertEqual(target["contract"], proof["mapping"]["target"]["contract"])
-        self.assertEqual(target["authority"]["kind"], "none")
-        self.assertEqual(target["authority"]["approval"], "not_asserted")
+        expected = json.loads(expected_path.read_text(encoding="utf-8"))
+        self.assertEqual(proof["target_envelope"], expected)
         self.assertEqual(
-            target["provenance"]["source"], source["provenance"]["source"]
-        )
-        self.assertEqual(
-            target["provenance"]["transformations"][-1]["mapping"],
-            proof["mapping"]["mapping_id"],
+            proof["source_envelope"]["data"]["email"], "person@example.invalid"
         )
 
     def test_source_contract_must_match_mapping_exactly(self) -> None:
