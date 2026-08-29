@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gzip
 import hashlib
 import io
 import json
@@ -111,6 +112,47 @@ class BoundedCandidateHashingTests(unittest.TestCase):
                         ):
                             integrity.archive_sha256(Path("candidate.tar.gz"))
 
+    def test_raw_compressed_growth_during_inspection_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            descriptor_path = Path(temp) / "descriptor.bin"
+            descriptor_path.write_bytes(b"1234")
+            descriptor = open(descriptor_path, "rb")
+            payload = gzip.compress(b"x" * 1024)
+            growing = _GrowingReader(descriptor, payload)
+            with mock.patch.object(integrity, "MAX_ARCHIVE_BYTES", 12):
+                with mock.patch.object(integrity, "_archive_size", return_value=4):
+                    with mock.patch.object(integrity, "_opened_archive_size", return_value=4):
+                        with mock.patch.object(Path, "open", return_value=growing):
+                            with self.assertRaisesRegex(
+                                integrity.CandidateArchiveError, "compressed stream"
+                            ):
+                                integrity.read_archive(Path("candidate.tar.gz"), "0.1.0-alpha.0")
+
+    def test_stable_inspection_rejects_mutation_after_parsing(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            directory = Path(temp)
+            result = release_builder.build_release_candidate(directory)
+            evidence = json.loads(result["evidence"].read_text(encoding="utf-8"))
+            original = integrity.inspect_candidate
+
+            def mutate_after_parse(*args, **kwargs):
+                parsed = original(*args, **kwargs)
+                with result["archive"].open("ab") as handle:
+                    handle.write(b"mutation")
+                return parsed
+
+            with mock.patch.object(integrity, "inspect_candidate", side_effect=mutate_after_parse):
+                with self.assertRaisesRegex(
+                    integrity.CandidateArchiveError, "changed during stable bounded inspection"
+                ):
+                    integrity.inspect_candidate_stable(
+                        result["archive"],
+                        version=evidence["version"],
+                        source_commit=evidence["source_commit"],
+                        expected_artifact_sha256=evidence["artifact_sha256"],
+                        expected_manifest_sha256=evidence["content_manifest_sha256"],
+                    )
+
     def test_extraction_rejects_over_limit_candidate_before_output(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             base = Path(temp)
@@ -125,26 +167,60 @@ class BoundedCandidateHashingTests(unittest.TestCase):
                     )
             self.assertFalse(destination.exists())
 
+    def test_extraction_uses_stable_inspection_before_output(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            base = Path(temp)
+            result = release_builder.build_release_candidate(base / "candidate")
+            destination = base / "extracted"
+            with mock.patch.object(
+                integrity,
+                "inspect_candidate_stable",
+                side_effect=integrity.CandidateArchiveError("stable snapshot rejected"),
+            ) as stable:
+                with self.assertRaisesRegex(
+                    extract_candidate.CandidateExtractionError, "stable snapshot rejected"
+                ):
+                    extract_candidate.extract_candidate(
+                        result["archive"], result["evidence"], destination
+                    )
+            stable.assert_called_once()
+            self.assertFalse(destination.exists())
+
     def test_readiness_rejects_over_limit_candidate_before_archive_inspection(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             directory = Path(temp)
             result, evidence = self._validated_candidate(directory)
             with mock.patch.object(integrity, "MAX_ARCHIVE_BYTES", 1):
-                with mock.patch.object(
-                    integrity,
-                    "inspect_candidate",
-                    side_effect=AssertionError("over-limit candidate must not be inspected"),
+                with self.assertRaisesRegex(
+                    release_readiness.ReleaseReadinessError, "compressed size"
                 ):
-                    with self.assertRaisesRegex(
-                        release_readiness.ReleaseReadinessError, "compressed size"
-                    ):
-                        release_readiness.evaluate_readiness(
-                            directory,
-                            expected_source_commit=evidence["source_commit"],
-                            fresh_environment_verified=True,
-                            documentation_build_verified=True,
-                        )
+                    release_readiness.evaluate_readiness(
+                        directory,
+                        expected_source_commit=evidence["source_commit"],
+                        fresh_environment_verified=True,
+                        documentation_build_verified=True,
+                    )
             self.assertTrue(result["archive"].is_file())
+
+    def test_readiness_uses_stable_candidate_inspection(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            directory = Path(temp)
+            _result, evidence = self._validated_candidate(directory)
+            with mock.patch.object(
+                integrity,
+                "inspect_candidate_stable",
+                side_effect=integrity.CandidateArchiveError("stable snapshot rejected"),
+            ) as stable:
+                with self.assertRaisesRegex(
+                    release_readiness.ReleaseReadinessError, "stable snapshot rejected"
+                ):
+                    release_readiness.evaluate_readiness(
+                        directory,
+                        expected_source_commit=evidence["source_commit"],
+                        fresh_environment_verified=True,
+                        documentation_build_verified=True,
+                    )
+            stable.assert_called_once()
 
     def test_preflight_note_reader_rejects_over_limit_candidate_before_inspection(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -152,19 +228,34 @@ class BoundedCandidateHashingTests(unittest.TestCase):
             result = release_builder.build_release_candidate(directory)
             evidence = json.loads(result["evidence"].read_text(encoding="utf-8"))
             with mock.patch.object(integrity, "MAX_ARCHIVE_BYTES", 1):
-                with mock.patch.object(
-                    integrity,
-                    "inspect_candidate",
-                    side_effect=AssertionError("over-limit candidate must not be inspected"),
+                with self.assertRaisesRegex(
+                    preflight.PublicationPreflightError, "compressed size"
                 ):
-                    with self.assertRaisesRegex(
-                        preflight.PublicationPreflightError, "compressed size"
-                    ):
-                        preflight._candidate_member(
-                            directory,
-                            evidence,
-                            f"docs/releases/{evidence['version']}.md",
-                        )
+                    preflight._candidate_member(
+                        directory,
+                        evidence,
+                        f"docs/releases/{evidence['version']}.md",
+                    )
+
+    def test_preflight_note_reader_uses_stable_candidate_inspection(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            directory = Path(temp)
+            result = release_builder.build_release_candidate(directory)
+            evidence = json.loads(result["evidence"].read_text(encoding="utf-8"))
+            with mock.patch.object(
+                integrity,
+                "inspect_candidate_stable",
+                side_effect=integrity.CandidateArchiveError("stable snapshot rejected"),
+            ) as stable:
+                with self.assertRaisesRegex(
+                    preflight.PublicationPreflightError, "stable snapshot rejected"
+                ):
+                    preflight._candidate_member(
+                        directory,
+                        evidence,
+                        f"docs/releases/{evidence['version']}.md",
+                    )
+            stable.assert_called_once()
 
 
 if __name__ == "__main__":

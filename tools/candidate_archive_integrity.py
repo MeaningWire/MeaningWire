@@ -31,11 +31,12 @@ class CandidateArchiveError(ValueError):
 
 
 class _BoundedReader:
-    """Expose a read-only stream that fails before decompression can grow without bound."""
+    """Expose a read-only stream that fails once its deterministic byte ceiling is crossed."""
 
-    def __init__(self, source: BinaryIO, limit: int) -> None:
+    def __init__(self, source: BinaryIO, limit: int, label: str) -> None:
         self._source = source
         self._limit = limit
+        self._label = label
         self._read = 0
 
     def read(self, size: int = -1) -> bytes:
@@ -45,8 +46,7 @@ class _BoundedReader:
         self._read += len(data)
         if self._read > self._limit:
             raise CandidateArchiveError(
-                "candidate archive decompressed stream exceeds safety limit "
-                f"({MAX_DECOMPRESSED_STREAM_BYTES} bytes)"
+                f"candidate archive {self._label} exceeds safety limit ({self._limit} bytes)"
             )
         return data
 
@@ -73,6 +73,19 @@ def _archive_size(path: Path) -> int:
     return size
 
 
+def _opened_archive_size(handle: BinaryIO) -> int:
+    try:
+        size = os.fstat(handle.fileno()).st_size
+    except OSError as exc:
+        raise CandidateArchiveError(f"cannot inspect opened candidate archive: {exc}") from exc
+    if size > MAX_ARCHIVE_BYTES:
+        raise CandidateArchiveError(
+            "candidate archive compressed size exceeds safety limit after open "
+            f"({MAX_ARCHIVE_BYTES} bytes)"
+        )
+    return size
+
+
 def archive_sha256(archive_path: str | Path) -> str:
     """Hash a candidate archive while enforcing the compressed-size ceiling."""
 
@@ -82,12 +95,7 @@ def archive_sha256(archive_path: str | Path) -> str:
     hashed_bytes = 0
     try:
         with path.open("rb") as handle:
-            opened_size = os.fstat(handle.fileno()).st_size
-            if opened_size > MAX_ARCHIVE_BYTES:
-                raise CandidateArchiveError(
-                    "candidate archive compressed size exceeds safety limit after open "
-                    f"({MAX_ARCHIVE_BYTES} bytes)"
-                )
+            _opened_archive_size(handle)
             while True:
                 remaining = MAX_ARCHIVE_BYTES - hashed_bytes
                 chunk = handle.read(min(1024 * 1024, remaining + 1))
@@ -118,8 +126,12 @@ def read_archive(archive_path: str | Path, version: str) -> dict[str, bytes]:
     total_file_bytes = 0
     try:
         with path.open("rb") as raw:
-            with gzip.GzipFile(fileobj=raw, mode="rb") as compressed:
-                bounded = _BoundedReader(compressed, MAX_DECOMPRESSED_STREAM_BYTES)
+            _opened_archive_size(raw)
+            bounded_raw = _BoundedReader(raw, MAX_ARCHIVE_BYTES, "compressed stream")
+            with gzip.GzipFile(fileobj=bounded_raw, mode="rb") as compressed:
+                bounded = _BoundedReader(
+                    compressed, MAX_DECOMPRESSED_STREAM_BYTES, "decompressed stream"
+                )
                 # Stream the tar sequentially so validation can enforce member and byte
                 # ceilings before an unbounded member list or payload set is materialized.
                 with tarfile.open(fileobj=bounded, mode="r|") as archive:
@@ -285,4 +297,33 @@ def inspect_candidate(
         version=version,
         source_commit=source_commit,
     )
+    return files, manifest, validation
+
+
+def inspect_candidate_stable(
+    archive_path: str | Path,
+    *,
+    version: str,
+    source_commit: str,
+    expected_artifact_sha256: str,
+    expected_manifest_sha256: str,
+) -> tuple[dict[str, bytes], dict[str, Any], dict[str, Any]]:
+    """Bind strict inspection to the same expected outer candidate before and after parsing."""
+
+    if not isinstance(expected_artifact_sha256, str) or not _SHA64_RE.fullmatch(
+        expected_artifact_sha256
+    ):
+        raise CandidateArchiveError("release evidence artifact_sha256 is invalid")
+    before_digest = archive_sha256(archive_path)
+    if before_digest != expected_artifact_sha256:
+        raise CandidateArchiveError("candidate archive SHA-256 does not match release evidence")
+    files, manifest, validation = inspect_candidate(
+        archive_path,
+        version=version,
+        source_commit=source_commit,
+        expected_manifest_sha256=expected_manifest_sha256,
+    )
+    after_digest = archive_sha256(archive_path)
+    if after_digest != before_digest or after_digest != expected_artifact_sha256:
+        raise CandidateArchiveError("candidate archive changed during stable bounded inspection")
     return files, manifest, validation

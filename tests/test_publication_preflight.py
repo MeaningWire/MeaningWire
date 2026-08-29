@@ -112,7 +112,7 @@ class PublicationPreflightTests(unittest.TestCase):
             ):
                 with self.assertRaisesRegex(
                     preflight.PublicationPreflightError,
-                    "changed during bounded release-notes inspection",
+                    "changed during stable bounded inspection",
                 ):
                     preflight._candidate_member(
                         directory,
@@ -130,7 +130,7 @@ class PublicationPreflightTests(unittest.TestCase):
             archive.write_bytes(archive.read_bytes() + b"changed-before-inspection")
             with self.assertRaisesRegex(
                 preflight.PublicationPreflightError,
-                "changed after readiness validation",
+                "SHA-256 does not match release evidence",
             ):
                 preflight._candidate_member(
                     directory,
