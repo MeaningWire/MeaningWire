@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import sys
 import tempfile
@@ -109,6 +110,36 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertIn("candidate_sbom_digest", failing)
         self.assertIn("checksum_manifest", failing)
         self.assertIn("sbom_validation_state", failing)
+
+    def test_wrong_official_schema_identity_blocks_threshold_even_if_rebound(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            candidate_dir, commit = self._validated_candidate(Path(directory))
+            validation_path = candidate_dir / "spdx-validation-evidence.json"
+            validation = json.loads(validation_path.read_text(encoding="utf-8"))
+            validation["official_schema"]["commit"] = "0" * 40
+            validation_bytes = validate_spdx_sbom.write_json(validation_path, validation)
+
+            release_path = candidate_dir / "release-evidence.json"
+            release_evidence = json.loads(release_path.read_text(encoding="utf-8"))
+            release_evidence["sbom"]["validation"]["evidence_sha256"] = hashlib.sha256(
+                validation_bytes
+            ).hexdigest()
+            validate_spdx_sbom.write_json(release_path, release_evidence)
+
+            report = release_readiness.evaluate_readiness(
+                candidate_dir,
+                expected_source_commit=commit,
+                fresh_environment_verified=True,
+            )
+
+        self.assertEqual(report["release_threshold"]["status"], "FAIL")
+        failing = {
+            check["name"]
+            for check in report["release_threshold"]["checks"]
+            if check["status"] == "FAIL"
+        }
+        self.assertNotIn("sbom_validation_state", failing)
+        self.assertIn("sbom_validation_schema_identity", failing)
 
 
 if __name__ == "__main__":
