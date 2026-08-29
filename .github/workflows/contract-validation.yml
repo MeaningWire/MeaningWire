@@ -115,5 +115,17 @@ jobs:
               urn:meaningwire:schema:identity:party:0.1.0 \
               tests/fixtures/domains/identity/party-person.json --json
           )
+      - name: Generate deterministic release-readiness reports
+        shell: bash
+        run: |
+          set -euo pipefail
+          for candidate_dir in /tmp/meaningwire-first /tmp/meaningwire-second; do
+            python tools/release_readiness.py \
+              --candidate-dir "$candidate_dir" \
+              --source-commit "$GITHUB_SHA" \
+              --fresh-environment-verified \
+              --output "${candidate_dir}/release-readiness.json"
+          done
+          cmp /tmp/meaningwire-first/release-readiness.json /tmp/meaningwire-second/release-readiness.json
       - name: Run deterministic unit tests
         run: python -m unittest discover -s tests -v
