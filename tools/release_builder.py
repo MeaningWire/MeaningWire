@@ -282,10 +282,13 @@ def build_release_candidate(
             "version": "2.3",
             "transitional": True,
             "scope": "candidate archive plus governed validation dependency environment",
+            "validation": {
+                "status": "PENDING",
+                "evidence_filename": "spdx-validation-evidence.json",
+            },
         },
         "deterministic_archive": True,
         "deterministic_sbom": True,
-        "sbom_schema_validation_performed": False,
         "attestation_performed": False,
         "publication_performed": False,
         "runtime_network_access": False,
@@ -338,7 +341,7 @@ def main(argv: list[str] | None = None) -> int:
         f"source_commit={evidence['source_commit']}; "
         f"artifact_sha256={evidence['artifact_sha256']}; "
         f"sbom_sha256={evidence['sbom']['sha256']}; "
-        "publication_performed=false; attestation_performed=false."
+        "sbom_validation=PENDING; publication_performed=false; attestation_performed=false."
     )
     return 0
 
