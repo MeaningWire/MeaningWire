@@ -13,6 +13,7 @@ import generate_reference_docs  # noqa: E402
 class GeneratedReferenceDocsTests(unittest.TestCase):
     def test_committed_generated_documents_are_current(self) -> None:
         documents = generate_reference_docs.generated_documents()
+        self.assertEqual(len(documents), 4)
         self.assertEqual(generate_reference_docs.check_documents(documents), [])
 
     def test_schema_reference_is_deterministic_and_contains_party_contract(self) -> None:
@@ -29,6 +30,26 @@ class GeneratedReferenceDocsTests(unittest.TestCase):
         self.assertIn("example-crm-email", first)
         self.assertIn("`identity`", first)
         self.assertIn("`equivalent`", first)
+
+    def test_starlight_schema_reference_is_generated_from_same_registry(self) -> None:
+        rendered = generate_reference_docs.render_starlight_schemas()
+        self.assertTrue(rendered.startswith("---\ntitle: Schema reference\n"))
+        self.assertIn("urn:meaningwire:schema:identity:party:0.1.0", rendered)
+        self.assertIn(
+            "https://github.com/MeaningWire/MeaningWire/blob/main/schemas/domains/identity/party.schema.json",
+            rendered,
+        )
+        self.assertNotIn("pagefind: false", rendered)
+
+    def test_starlight_mapping_reference_is_generated_from_same_registry(self) -> None:
+        rendered = generate_reference_docs.render_starlight_mappings()
+        self.assertTrue(rendered.startswith("---\ntitle: Mapping reference\n"))
+        self.assertIn("urn:meaningwire:mapping:example-crm-email:0.1.0", rendered)
+        self.assertIn(
+            "https://github.com/MeaningWire/MeaningWire/blob/main/mappings/definitions/example-crm-email.json",
+            rendered,
+        )
+        self.assertNotIn("pagefind: false", rendered)
 
 
 if __name__ == "__main__":

@@ -82,16 +82,26 @@ jobs:
           rm -rf dist /tmp/meaningwire-docs-first
           npm run docs:build
           test -f dist/index.html
+          test -f dist/reference/schemas/index.html
+          test -f dist/reference/mappings/index.html
+          grep -Fq 'urn:meaningwire:schema:identity:party:0.1.0' dist/reference/schemas/index.html
+          grep -Fq 'urn:meaningwire:mapping:example-crm-email:0.1.0' dist/reference/mappings/index.html
+          test -f dist/pagefind/pagefind.js
           cp -a dist /tmp/meaningwire-docs-first
           rm -rf dist
           npm run docs:build
           test -f dist/index.html
+          test -f dist/reference/schemas/index.html
+          test -f dist/reference/mappings/index.html
+          grep -Fq 'urn:meaningwire:schema:identity:party:0.1.0' dist/reference/schemas/index.html
+          grep -Fq 'urn:meaningwire:mapping:example-crm-email:0.1.0' dist/reference/mappings/index.html
+          test -f dist/pagefind/pagefind.js
           diff -qr /tmp/meaningwire-docs-first dist
           if find dist -type l -print -quit | grep -q .; then
             echo "ERROR: documentation output contains a symbolic link" >&2
             exit 1
           fi
-          echo "PASS: locked Starlight build produced byte-identical static output twice."
+          echo "PASS: generated reference routes and Pagefind bundle exist in byte-identical Starlight output."
       - name: Build candidate twice from exact commit
         shell: bash
         run: |
