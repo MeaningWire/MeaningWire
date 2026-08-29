@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 from pathlib import Path
@@ -22,6 +23,10 @@ def load_json(path: Path) -> Any:
         return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise SPDXValidationError(f"cannot read JSON {path}: {exc}") from exc
+
+
+def json_bytes(value: dict[str, Any]) -> bytes:
+    return (json.dumps(value, indent=2, sort_keys=True) + "\n").encode("utf-8")
 
 
 def sha256_file(path: Path) -> str:
@@ -105,7 +110,10 @@ def validate_meaningwire_policy(
     source_commit = release_evidence.get("source_commit")
     archive_name = release_evidence.get("artifact")
     archive_sha256 = release_evidence.get("artifact_sha256")
-    if not all(isinstance(value, str) and value for value in (version, source_commit, archive_name, archive_sha256)):
+    if not all(
+        isinstance(value, str) and value
+        for value in (version, source_commit, archive_name, archive_sha256)
+    ):
         raise SPDXValidationError("release evidence is missing candidate identity fields")
 
     expected_namespace = f"urn:meaningwire:spdx:release-candidate:{version}:{source_commit}"
@@ -124,7 +132,10 @@ def validate_meaningwire_policy(
         raise SPDXValidationError("MeaningWire root package archive name mismatch")
     if checksum_values(root) != {archive_sha256}:
         raise SPDXValidationError("MeaningWire root package SHA-256 does not match release evidence")
-    if root.get("licenseConcluded") != "Apache-2.0" or root.get("licenseDeclared") != "Apache-2.0":
+    if (
+        root.get("licenseConcluded") != "Apache-2.0"
+        or root.get("licenseDeclared") != "Apache-2.0"
+    ):
         raise SPDXValidationError("MeaningWire root package license must be Apache-2.0")
     if root.get("filesAnalyzed") is not False:
         raise SPDXValidationError("candidate SBOM must state filesAnalyzed=false for root package")
@@ -215,9 +226,40 @@ def validation_evidence(
     }
 
 
-def write_json(path: Path, value: dict[str, Any]) -> None:
+def write_json(path: Path, value: dict[str, Any]) -> bytes:
+    data = json_bytes(value)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+    path.write_bytes(data)
+    return data
+
+
+def promote_release_evidence(
+    release_evidence_path: Path,
+    release_evidence: dict[str, Any],
+    *,
+    validation_evidence_path: Path,
+    validation_evidence_bytes: bytes,
+) -> dict[str, Any]:
+    updated = copy.deepcopy(release_evidence)
+    sbom = updated.get("sbom")
+    if not isinstance(sbom, dict):
+        raise SPDXValidationError("release evidence does not describe an SBOM")
+    validation = sbom.get("validation")
+    if not isinstance(validation, dict) or validation.get("status") not in {"PENDING", "PASS"}:
+        raise SPDXValidationError("release evidence has an unexpected SBOM validation state")
+    sbom["validation"] = {
+        "status": "PASS",
+        "evidence_filename": validation_evidence_path.name,
+        "evidence_sha256": hashlib.sha256(validation_evidence_bytes).hexdigest(),
+        "official_schema": {
+            "repository": fetch_spdx_schema.SPDX_SPEC_REPOSITORY,
+            "commit": fetch_spdx_schema.SPDX_SPEC_COMMIT,
+            "path": fetch_spdx_schema.SPDX_SCHEMA_PATH,
+            "git_blob_sha1": fetch_spdx_schema.SPDX_SCHEMA_BLOB_SHA1,
+        },
+    }
+    write_json(release_evidence_path, updated)
+    return updated
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -228,6 +270,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--schema", required=True, help="verified official SPDX 2.3 schema path")
     parser.add_argument("--release-evidence", required=True, help="MeaningWire release-evidence.json path")
     parser.add_argument("--output-evidence", help="write deterministic SBOM validation evidence JSON")
+    parser.add_argument(
+        "--update-release-evidence",
+        action="store_true",
+        help="promote release-evidence SBOM validation state to PASS after successful validation",
+    )
     return parser
 
 
@@ -237,6 +284,10 @@ def main(argv: list[str] | None = None) -> int:
     schema_path = Path(args.schema)
     release_evidence_path = Path(args.release_evidence)
     try:
+        if args.update_release_evidence and not args.output_evidence:
+            raise SPDXValidationError(
+                "--update-release-evidence requires --output-evidence"
+            )
         sbom = load_json(sbom_path)
         if not isinstance(sbom, dict):
             raise SPDXValidationError("SBOM root must be a JSON object")
@@ -247,7 +298,10 @@ def main(argv: list[str] | None = None) -> int:
         expected_sbom = release_evidence.get("sbom")
         if not isinstance(expected_sbom, dict):
             raise SPDXValidationError("release evidence does not describe an SBOM")
-        if expected_sbom.get("filename") != sbom_path.name or expected_sbom.get("sha256") != sbom_sha256:
+        if (
+            expected_sbom.get("filename") != sbom_path.name
+            or expected_sbom.get("sha256") != sbom_sha256
+        ):
             raise SPDXValidationError("SBOM identity does not match release evidence")
         schema_sha256 = validate_official_schema(sbom, schema_path)
         policy = validate_meaningwire_policy(sbom, release_evidence)
@@ -257,8 +311,19 @@ def main(argv: list[str] | None = None) -> int:
             schema_sha256=schema_sha256,
             policy=policy,
         )
+        evidence_bytes: bytes | None = None
+        evidence_path: Path | None = None
         if args.output_evidence:
-            write_json(Path(args.output_evidence), evidence)
+            evidence_path = Path(args.output_evidence)
+            evidence_bytes = write_json(evidence_path, evidence)
+        if args.update_release_evidence:
+            assert evidence_path is not None and evidence_bytes is not None
+            promote_release_evidence(
+                release_evidence_path,
+                release_evidence,
+                validation_evidence_path=evidence_path,
+                validation_evidence_bytes=evidence_bytes,
+            )
     except (
         SPDXValidationError,
         fetch_spdx_schema.SPDXSchemaFetchError,
