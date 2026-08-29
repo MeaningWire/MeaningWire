@@ -17,6 +17,8 @@ import tarfile
 from pathlib import Path
 from typing import Any
 
+import fetch_spdx_schema
+
 PROJECT = "MeaningWire"
 READY = "READY_FOR_HUMAN_DECISION"
 BLOCKED = "BLOCKED"
@@ -30,6 +32,7 @@ _REQUIRED_ARCHIVE_PATHS = (
     "docs/quickstart.md",
     "docs/releases/compatibility-and-migrations.md",
     "docs/releases/candidate-sbom.md",
+    "docs/releases/release-readiness.md",
     "docs/releases/release-notes-template.md",
     "docs/architecture/public-implementation-boundary.md",
     "docs/architecture/release-agent-foundation.md",
@@ -140,6 +143,22 @@ def _check(name: str, passed: bool, detail: str) -> dict[str, Any]:
     return {"name": name, "status": "PASS" if passed else "FAIL", "detail": detail}
 
 
+def _expected_spdx_schema_identity() -> dict[str, str]:
+    return {
+        "repository": fetch_spdx_schema.SPDX_SPEC_REPOSITORY,
+        "commit": fetch_spdx_schema.SPDX_SPEC_COMMIT,
+        "path": fetch_spdx_schema.SPDX_SCHEMA_PATH,
+        "git_blob_sha1": fetch_spdx_schema.SPDX_SCHEMA_BLOB_SHA1,
+    }
+
+
+def _schema_identity_matches(value: Any) -> bool:
+    return isinstance(value, dict) and all(
+        value.get(key) == expected
+        for key, expected in _expected_spdx_schema_identity().items()
+    )
+
+
 def _detect_documentation_site(files: dict[str, bytes]) -> tuple[bool, str]:
     package_json_paths = sorted(path for path in files if path.endswith("package.json"))
     lock_paths = {path for path in files if path.endswith("package-lock.json")}
@@ -169,8 +188,14 @@ def _detect_documentation_site(files: dict[str, bytes]) -> tuple[bool, str]:
         has_lock = f"{parent}package-lock.json" in lock_paths
         has_config = any(path.startswith(parent) for path in astro_config_paths)
         if has_lock and has_config:
-            return True, f"Starlight package, lockfile, and Astro config found under {parent or 'repository root'}"
-    return False, "no pinned Starlight package + package-lock + Astro config set is present in the candidate"
+            return True, (
+                "Starlight package, lockfile, and Astro config found under "
+                f"{parent or 'repository root'}"
+            )
+    return False, (
+        "no pinned Starlight package + package-lock + Astro config set is present "
+        "in the candidate"
+    )
 
 
 def _detect_publication_path(files: dict[str, bytes]) -> tuple[bool, bool, str]:
@@ -264,7 +289,10 @@ def evaluate_readiness(
     }
 
     validation_state = sbom_evidence.get("validation")
-    validation_pass = isinstance(validation_state, dict) and validation_state.get("status") == "PASS"
+    validation_pass = (
+        isinstance(validation_state, dict)
+        and validation_state.get("status") == "PASS"
+    )
     validation_digest_bound = (
         validation_pass
         and validation_state.get("evidence_filename") == validation_path.name
@@ -275,6 +303,19 @@ def evaluate_readiness(
         and isinstance(validation_evidence.get("sbom"), dict)
         and validation_evidence["sbom"].get("filename") == sbom_name
         and validation_evidence["sbom"].get("sha256") == actual_sbom_sha256
+        and validation_evidence["sbom"].get("format") == "SPDX"
+        and validation_evidence["sbom"].get("version") == "2.3"
+        and validation_evidence["sbom"].get("transitional") is True
+    )
+    validation_schema_identity = (
+        isinstance(validation_state, dict)
+        and _schema_identity_matches(validation_state.get("official_schema"))
+        and _schema_identity_matches(validation_evidence.get("official_schema"))
+    )
+    release_sbom_identity = (
+        sbom_evidence.get("format") == "SPDX"
+        and sbom_evidence.get("version") == "2.3"
+        and sbom_evidence.get("transitional") is True
     )
 
     missing_required_paths = sorted(set(_REQUIRED_ARCHIVE_PATHS) - manifest_paths)
@@ -297,8 +338,18 @@ def evaluate_readiness(
         ),
         _check(
             "sbom_validation_state",
-            bool(validation_pass and validation_digest_bound and validation_document_pass),
+            bool(
+                validation_pass
+                and validation_digest_bound
+                and validation_document_pass
+                and release_sbom_identity
+            ),
             "SBOM validation is PASS and the deterministic validation evidence digest is bound",
+        ),
+        _check(
+            "sbom_validation_schema_identity",
+            bool(validation_schema_identity),
+            "release and validation evidence both bind the exact pinned official SPDX schema identity",
         ),
         _check(
             "candidate_manifest_identity",
@@ -403,8 +454,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Evaluate MeaningWire release readiness without publishing"
     )
-    parser.add_argument("--candidate-dir", required=True, help="verified candidate evidence directory")
-    parser.add_argument("--source-commit", help="require candidate evidence to match this exact commit")
+    parser.add_argument(
+        "--candidate-dir", required=True, help="verified candidate evidence directory"
+    )
+    parser.add_argument(
+        "--source-commit", help="require candidate evidence to match this exact commit"
+    )
     parser.add_argument(
         "--fresh-environment-verified",
         action="store_true",
