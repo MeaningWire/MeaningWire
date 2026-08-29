@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Build deterministic, non-publishing MeaningWire release-candidate evidence.
 
-The builder reads tracked blob contents from the exact checked-out Git commit,
-not from mutable working-tree files. It creates a normalized tar.gz archive, a
-content manifest, a transitional SPDX 2.3 candidate SBOM, SHA-256 checksums,
-and release evidence. It does not tag, publish, attest, upload, announce, or
-contact a package registry.
+The builder reads tracked blob contents and release identity from the exact
+checked-out Git commit, not from mutable working-tree files. It creates a
+normalized tar.gz archive, a content manifest, a transitional SPDX 2.3
+candidate SBOM, SHA-256 checksums, and release evidence. It does not tag,
+publish, attest, upload, announce, or contact a package registry.
 """
 
 from __future__ import annotations
@@ -26,7 +26,6 @@ import candidate_archive_integrity
 import generate_spdx_sbom
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION_PATH = ROOT / "VERSION"
 PROJECT = "MeaningWire"
 MATURITY = "EXPERIMENTAL"
 _VERSION_RE = re.compile(
@@ -72,12 +71,18 @@ def current_commit() -> str:
     return value
 
 
-def load_version() -> str:
-    if not VERSION_PATH.is_file():
-        raise ReleaseBuildError("VERSION file is missing")
-    version = VERSION_PATH.read_text(encoding="utf-8").strip()
+def load_version(source_ref: str = "HEAD") -> str:
+    """Read VERSION from an exact Git source ref, never from the working tree."""
+
+    try:
+        raw = _git_bytes("show", f"{source_ref}:VERSION")
+        version = raw.decode("utf-8", errors="strict").strip()
+    except UnicodeDecodeError as exc:
+        raise ReleaseBuildError("committed VERSION is not valid UTF-8") from exc
     if not _VERSION_RE.fullmatch(version):
-        raise ReleaseBuildError(f"VERSION is not valid SemVer: {version!r}")
+        raise ReleaseBuildError(f"committed VERSION is not valid SemVer: {version!r}")
+    if raw != f"{version}\n".encode("utf-8"):
+        raise ReleaseBuildError("committed VERSION must contain exactly one SemVer line")
     return version
 
 
@@ -271,8 +276,11 @@ def build_release_candidate(
             f"expected source commit {expected_source_commit} but HEAD is {source_commit}"
         )
 
-    version = load_version()
+    version = load_version(source_commit)
     blobs = tracked_blobs()
+    version_blob = next((blob for blob in blobs if blob.path == "VERSION"), None)
+    if version_blob is None or version_blob.data != f"{version}\n".encode("utf-8"):
+        raise ReleaseBuildError("tracked VERSION does not match exact committed release identity")
     manifest = build_content_manifest(blobs, version=version, source_commit=source_commit)
     manifest_bytes = _json_bytes(manifest)
     _validate_generated_manifest_limits(blobs, manifest_bytes)
