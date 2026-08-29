@@ -8,6 +8,20 @@ MeaningWire is a vendor-neutral, open-source semantic interoperability framework
 
 Public visibility is not a request for outside developers to build the project. The current priority is to produce, validate, document, and release a coherent first usable version before any broader community or adoption push.
 
+## Try the current pre-release proof
+
+Repository evaluators can run the current pinned synthetic interoperability path locally:
+
+```text
+python -m pip install -r requirements-validation.txt
+python tools/meaningwire.py doctor
+python tools/meaningwire.py proof run
+```
+
+The proof uses only public repository code and synthetic fixtures and performs no runtime network access. It is experimental evidence, not a production-readiness or vendor-compatibility claim.
+
+See the [pre-release quickstart](docs/quickstart.md) for the exact path, machine-readable output, schema validation example, and current limitations.
+
 ## Why MeaningWire
 
 Modern organizations rarely have one system of record, one data model, or one automation surface. Applications, ERPs, CRMs, finance tools, content systems, event streams, analytics platforms, and AI agents all describe overlapping concepts differently.
