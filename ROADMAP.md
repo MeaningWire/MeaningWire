@@ -87,7 +87,8 @@ Current evidence already includes:
 - a manual-only, non-publishing release-candidate workflow with read-only repository permissions;
 - fresh-environment verification of the extracted candidate in an isolated Python environment before candidate evidence is considered verified;
 - an accepted Astro + Starlight documentation-stack decision with explicit reproducibility, accessibility, static-output, and deployment constraints;
-- a low-cognitive-load documentation information architecture for beginner, builder, model/research, and evaluation/integration entry paths.
+- a low-cognitive-load documentation information architecture for beginner, builder, model/research, and evaluation/integration entry paths;
+- deterministic human-readable schema and mapping references generated from canonical registries, with CI drift detection so generated documentation cannot silently diverge from the JSON source of truth.
 
 Remaining Phase 4 work includes:
 
@@ -96,7 +97,7 @@ Remaining Phase 4 work includes:
 - implement the beginner, builder, researcher/model, and integration/evaluation entry paths;
 - architecture explanations and worked mapping examples beyond the current proof;
 - standards crosswalk documentation;
-- searchable schema and mapping reference generated from canonical repository data where practical;
+- integrate the generated schema and mapping references into local static-site search once the Starlight build is locked and reproducible;
 - release-note and compatibility/migration expectations;
 - supply-chain evidence appropriate to a public preview, including SBOM/signing/provenance decisions;
 - an explicitly governed publication path from a verified candidate to a public GitHub Release.

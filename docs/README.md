@@ -5,9 +5,28 @@ This directory contains project documentation that should be understandable with
 Current areas:
 
 - [`architecture/`](architecture/) — architectural principles, boundaries, and accepted design decisions
+- [`reference/`](reference/) — human-readable references derived from canonical schema and mapping data
 - [`rfcs/`](rfcs/) — substantial public-contract and governance proposals
 - [`labs/`](labs/) — explicitly experimental research and frontier concepts
 - [`quickstart.md`](quickstart.md) — the current repository-local pre-release evaluation path
+
+## Generated references
+
+Schema and mapping reference pages under [`reference/generated/`](reference/generated/) are generated deterministically from the canonical public registries and definitions. They are presentation artifacts, not a second source of truth.
+
+Use:
+
+```text
+python tools/generate_reference_docs.py
+```
+
+to regenerate them, or:
+
+```text
+python tools/generate_reference_docs.py --check
+```
+
+to verify that committed references match canonical repository data. CI runs the check form and fails on drift.
 
 ## Documentation site direction
 
