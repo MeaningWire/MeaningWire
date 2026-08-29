@@ -1,0 +1,16 @@
+{
+  "name": "meaningwire-docs",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "docs:build": "astro build"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "devDependencies": {
+    "@astrojs/starlight": "0.41.10",
+    "astro": "7.2.9"
+  }
+}
