@@ -239,10 +239,6 @@ def evaluate_readiness(
         if not path.is_file():
             raise ReleaseReadinessError(f"required candidate evidence file is missing: {path.name}")
 
-    try:
-        actual_archive_sha256 = candidate_archive_integrity.archive_sha256(archive_path)
-    except candidate_archive_integrity.CandidateArchiveError as exc:
-        raise ReleaseReadinessError(f"candidate archive integrity failure: {exc}") from exc
     actual_sbom_sha256 = _sha256(sbom_path)
     validation_sha256 = _sha256(validation_path)
     checksums = _parse_checksums(checksums_path)
@@ -250,15 +246,17 @@ def evaluate_readiness(
 
     try:
         archive_files, manifest, manifest_validation = (
-            candidate_archive_integrity.inspect_candidate(
+            candidate_archive_integrity.inspect_candidate_stable(
                 archive_path,
                 version=version,
                 source_commit=source_commit,
+                expected_artifact_sha256=archive_sha256,
                 expected_manifest_sha256=manifest_sha256,
             )
         )
     except candidate_archive_integrity.CandidateArchiveError as exc:
         raise ReleaseReadinessError(f"candidate archive integrity failure: {exc}") from exc
+    actual_archive_sha256 = archive_sha256
     manifest_paths = manifest_validation["paths"]
 
     validation_state = sbom_evidence.get("validation")
