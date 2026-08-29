@@ -21,12 +21,15 @@ class MeaningWireCLITests(unittest.TestCase):
             code = meaningwire.main(argv)
         return code, stdout.getvalue(), stderr.getvalue()
 
+    def expected_version(self) -> str:
+        return (ROOT / "VERSION").read_text(encoding="utf-8").strip()
+
     def test_doctor_json_reports_public_state(self) -> None:
         code, stdout, stderr = self.run_cli(["doctor", "--json"])
         self.assertEqual(code, 0, stderr)
         payload = json.loads(stdout)
         self.assertEqual(payload["status"], "PASS")
-        self.assertEqual(payload["version"], "0.1.0-alpha.0")
+        self.assertEqual(payload["version"], self.expected_version())
         self.assertEqual(payload["schemas"]["bootstrap_registered"], 6)
         self.assertEqual(payload["schemas"]["draft_2020_12_registered"], 6)
         self.assertEqual(payload["mappings"]["registered"], 2)
@@ -111,7 +114,7 @@ class MeaningWireCLITests(unittest.TestCase):
             ).read_text(encoding="utf-8")
         )
         self.assertEqual(payload["status"], "PASS")
-        self.assertEqual(payload["version"], "0.1.0-alpha.0")
+        self.assertEqual(payload["version"], self.expected_version())
         self.assertFalse(payload["network_access"])
         self.assertEqual(payload["proof"]["target_envelope"], expected)
         self.assertEqual(
@@ -124,7 +127,7 @@ class MeaningWireCLITests(unittest.TestCase):
         self.assertEqual(code, 0, stderr)
         self.assertEqual(stderr, "")
         self.assertIn("PASS: EXPERIMENTAL synthetic interoperability proof", stdout)
-        self.assertIn("version=0.1.0-alpha.0", stdout)
+        self.assertIn(f"version={self.expected_version()}", stdout)
         self.assertIn("target approval not asserted", stdout)
         self.assertIn("network access disabled", stdout)
 
