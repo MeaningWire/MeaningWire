@@ -13,10 +13,10 @@ import argparse
 import hashlib
 import json
 import re
-import tarfile
 from pathlib import Path
 from typing import Any
 
+import candidate_archive_integrity
 import fetch_spdx_schema
 
 PROJECT = "MeaningWire"
@@ -97,46 +97,6 @@ def _parse_checksums(path: Path) -> dict[str, str]:
     if not result:
         raise ReleaseReadinessError("SHA256SUMS contains no entries")
     return result
-
-
-def _archive_files(archive_path: Path, version: str) -> dict[str, bytes]:
-    prefix = f"{PROJECT}-{version}/"
-    files: dict[str, bytes] = {}
-    try:
-        with tarfile.open(archive_path, "r:gz") as archive:
-            for member in archive.getmembers():
-                if not member.isfile():
-                    continue
-                if not member.name.startswith(prefix):
-                    raise ReleaseReadinessError(
-                        f"candidate archive member is outside expected prefix: {member.name}"
-                    )
-                relative = member.name[len(prefix) :]
-                if not relative or relative.startswith("/") or ".." in Path(relative).parts:
-                    raise ReleaseReadinessError(
-                        f"unsafe candidate archive member: {member.name}"
-                    )
-                extracted = archive.extractfile(member)
-                if extracted is None:
-                    raise ReleaseReadinessError(
-                        f"could not read candidate archive member: {member.name}"
-                    )
-                files[relative] = extracted.read()
-    except (OSError, tarfile.TarError) as exc:
-        raise ReleaseReadinessError(f"cannot inspect candidate archive: {exc}") from exc
-    if not files:
-        raise ReleaseReadinessError("candidate archive contains no regular files")
-    return files
-
-
-def _json_from_bytes(data: bytes, label: str) -> dict[str, Any]:
-    try:
-        value = json.loads(data.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise ReleaseReadinessError(f"cannot parse {label}: {exc}") from exc
-    if not isinstance(value, dict):
-        raise ReleaseReadinessError(f"{label} root must be an object")
-    return value
 
 
 def _check(name: str, passed: bool, detail: str) -> dict[str, Any]:
@@ -240,6 +200,7 @@ def evaluate_readiness(
     source_commit = release_evidence.get("source_commit")
     archive_name = release_evidence.get("artifact")
     archive_sha256 = release_evidence.get("artifact_sha256")
+    manifest_sha256 = release_evidence.get("content_manifest_sha256")
     if not isinstance(version, str) or not _SEMVER_PRERELEASE_RE.fullmatch(version):
         raise ReleaseReadinessError("release evidence version must be explicit prerelease SemVer")
     if not isinstance(source_commit, str) or not _SHA40_RE.fullmatch(source_commit):
@@ -252,6 +213,8 @@ def evaluate_readiness(
         raise ReleaseReadinessError("release evidence artifact filename is inconsistent with version")
     if not isinstance(archive_sha256, str) or not _SHA64_RE.fullmatch(archive_sha256):
         raise ReleaseReadinessError("release evidence artifact_sha256 is invalid")
+    if not isinstance(manifest_sha256, str) or not _SHA64_RE.fullmatch(manifest_sha256):
+        raise ReleaseReadinessError("release evidence content_manifest_sha256 is invalid")
 
     sbom_evidence = release_evidence.get("sbom")
     if not isinstance(sbom_evidence, dict):
@@ -278,16 +241,18 @@ def evaluate_readiness(
     checksums = _parse_checksums(checksums_path)
     validation_evidence = _read_json(validation_path)
 
-    archive_files = _archive_files(archive_path, version)
-    manifest_bytes = archive_files.get("RELEASE-MANIFEST.json")
-    if manifest_bytes is None:
-        raise ReleaseReadinessError("candidate archive is missing RELEASE-MANIFEST.json")
-    manifest = _json_from_bytes(manifest_bytes, "RELEASE-MANIFEST.json")
-    manifest_paths = {
-        item.get("path")
-        for item in manifest.get("files", [])
-        if isinstance(item, dict) and isinstance(item.get("path"), str)
-    }
+    try:
+        archive_files, manifest, manifest_validation = (
+            candidate_archive_integrity.inspect_candidate(
+                archive_path,
+                version=version,
+                source_commit=source_commit,
+                expected_manifest_sha256=manifest_sha256,
+            )
+        )
+    except candidate_archive_integrity.CandidateArchiveError as exc:
+        raise ReleaseReadinessError(f"candidate archive integrity failure: {exc}") from exc
+    manifest_paths = manifest_validation["paths"]
 
     validation_state = sbom_evidence.get("validation")
     validation_pass = (
@@ -336,6 +301,11 @@ def evaluate_readiness(
             checksums.get(archive_name) == actual_archive_sha256
             and checksums.get(sbom_name) == actual_sbom_sha256,
             "SHA256SUMS binds the candidate archive and SBOM",
+        ),
+        _check(
+            "candidate_manifest_digest_and_contents",
+            True,
+            f"embedded manifest digest is bound and exactly describes {manifest_validation['file_count']} archive files",
         ),
         _check(
             "sbom_validation_state",
