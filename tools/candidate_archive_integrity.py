@@ -3,21 +3,51 @@
 
 from __future__ import annotations
 
+import gzip
 import hashlib
 import json
 import re
 import tarfile
 from pathlib import Path
-from typing import Any
+from typing import Any, BinaryIO
 
 PROJECT = "MeaningWire"
 _SHA40_RE = re.compile(r"^[0-9a-f]{40}$")
 _SHA64_RE = re.compile(r"^[0-9a-f]{64}$")
 _ALLOWED_MODES = {"0644", "0755"}
 
+# These ceilings are deliberately much larger than the current preview candidate while
+# remaining finite enough to fail closed on unreasonable or adversarial archive input.
+MAX_ARCHIVE_BYTES = 64 * 1024 * 1024
+MAX_MEMBER_COUNT = 4096
+MAX_MEMBER_BYTES = 32 * 1024 * 1024
+MAX_TOTAL_FILE_BYTES = 256 * 1024 * 1024
+MAX_DECOMPRESSED_STREAM_BYTES = 320 * 1024 * 1024
+
 
 class CandidateArchiveError(ValueError):
     """Raised when candidate archive structure or manifest evidence is ambiguous."""
+
+
+class _BoundedReader:
+    """Expose a read-only stream that fails before decompression can grow without bound."""
+
+    def __init__(self, source: BinaryIO, limit: int) -> None:
+        self._source = source
+        self._limit = limit
+        self._read = 0
+
+    def read(self, size: int = -1) -> bytes:
+        remaining = self._limit - self._read
+        request = remaining + 1 if size < 0 else min(size, remaining + 1)
+        data = self._source.read(request)
+        self._read += len(data)
+        if self._read > self._limit:
+            raise CandidateArchiveError(
+                "candidate archive decompressed stream exceeds safety limit "
+                f"({MAX_DECOMPRESSED_STREAM_BYTES} bytes)"
+            )
+        return data
 
 
 def _safe_relative(path: str, *, label: str) -> str:
@@ -29,43 +59,85 @@ def _safe_relative(path: str, *, label: str) -> str:
     return path
 
 
+def _archive_size(path: Path) -> int:
+    try:
+        size = path.stat().st_size
+    except OSError as exc:
+        raise CandidateArchiveError(f"cannot inspect candidate archive: {exc}") from exc
+    if size > MAX_ARCHIVE_BYTES:
+        raise CandidateArchiveError(
+            "candidate archive compressed size exceeds safety limit "
+            f"({MAX_ARCHIVE_BYTES} bytes)"
+        )
+    return size
+
+
 def read_archive(archive_path: str | Path, version: str) -> dict[str, bytes]:
-    """Return unique regular-file contents after strict archive-structure checks."""
+    """Return bounded unique regular-file contents after strict archive checks."""
 
     path = Path(archive_path)
+    _archive_size(path)
     prefix = f"{PROJECT}-{version}/"
     files: dict[str, bytes] = {}
+    member_count = 0
+    total_file_bytes = 0
     try:
-        with tarfile.open(path, "r:gz") as archive:
-            members = archive.getmembers()
-            if not members:
-                raise CandidateArchiveError("candidate archive contains no members")
-            for member in members:
-                if not member.isfile():
-                    raise CandidateArchiveError(
-                        f"candidate archive contains non-regular member: {member.name}"
-                    )
-                if not member.name.startswith(prefix):
-                    raise CandidateArchiveError(
-                        f"candidate archive member is outside expected prefix: {member.name}"
-                    )
-                relative = _safe_relative(
-                    member.name[len(prefix) :], label="candidate archive member"
-                )
-                if relative in files:
-                    raise CandidateArchiveError(
-                        f"duplicate candidate archive member: {relative}"
-                    )
-                extracted = archive.extractfile(member)
-                if extracted is None:
-                    raise CandidateArchiveError(
-                        f"could not read candidate archive member: {member.name}"
-                    )
-                files[relative] = extracted.read()
+        with path.open("rb") as raw:
+            with gzip.GzipFile(fileobj=raw, mode="rb") as compressed:
+                bounded = _BoundedReader(compressed, MAX_DECOMPRESSED_STREAM_BYTES)
+                # Stream the tar sequentially so validation can enforce member and byte
+                # ceilings before an unbounded member list or payload set is materialized.
+                with tarfile.open(fileobj=bounded, mode="r|") as archive:
+                    for member in archive:
+                        member_count += 1
+                        if member_count > MAX_MEMBER_COUNT:
+                            raise CandidateArchiveError(
+                                "candidate archive member count exceeds safety limit "
+                                f"({MAX_MEMBER_COUNT})"
+                            )
+                        if not member.isfile():
+                            raise CandidateArchiveError(
+                                f"candidate archive contains non-regular member: {member.name}"
+                            )
+                        if member.size < 0 or member.size > MAX_MEMBER_BYTES:
+                            raise CandidateArchiveError(
+                                "candidate archive member exceeds safety limit: "
+                                f"{member.name} ({MAX_MEMBER_BYTES} bytes)"
+                            )
+                        if total_file_bytes + member.size > MAX_TOTAL_FILE_BYTES:
+                            raise CandidateArchiveError(
+                                "candidate archive total uncompressed file size exceeds safety limit "
+                                f"({MAX_TOTAL_FILE_BYTES} bytes)"
+                            )
+                        if not member.name.startswith(prefix):
+                            raise CandidateArchiveError(
+                                f"candidate archive member is outside expected prefix: {member.name}"
+                            )
+                        relative = _safe_relative(
+                            member.name[len(prefix) :], label="candidate archive member"
+                        )
+                        if relative in files:
+                            raise CandidateArchiveError(
+                                f"duplicate candidate archive member: {relative}"
+                            )
+                        extracted = archive.extractfile(member)
+                        if extracted is None:
+                            raise CandidateArchiveError(
+                                f"could not read candidate archive member: {member.name}"
+                            )
+                        data = extracted.read(member.size + 1)
+                        if len(data) != member.size:
+                            raise CandidateArchiveError(
+                                f"candidate archive member size is inconsistent: {member.name}"
+                            )
+                        files[relative] = data
+                        total_file_bytes += len(data)
     except CandidateArchiveError:
         raise
-    except (OSError, tarfile.TarError) as exc:
+    except (OSError, EOFError, gzip.BadGzipFile, tarfile.TarError) as exc:
         raise CandidateArchiveError(f"cannot inspect candidate archive: {exc}") from exc
+    if member_count == 0:
+        raise CandidateArchiveError("candidate archive contains no members")
     if not files:
         raise CandidateArchiveError("candidate archive contains no regular files")
     return files
