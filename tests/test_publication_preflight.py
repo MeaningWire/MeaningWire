@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import json
 import sys
+import tarfile
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
@@ -77,6 +79,64 @@ class PublicationPreflightTests(unittest.TestCase):
         self.assertEqual(report["human_boundary"]["status"], "PENDING")
         self.assertIn(b"Prepublication evidence", notes)
         self.assertIn(commit.encode(), notes)
+
+    def test_preflight_does_not_use_raw_tar_member_lookup(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            directory, commit, version = self._candidate(Path(temp))
+            with mock.patch.object(
+                tarfile.TarFile,
+                "getmember",
+                side_effect=AssertionError("raw tar member lookup must not be used"),
+            ):
+                report, _notes = self._evaluate(directory, commit, version)
+        self.assertEqual(report["source_commit"], commit)
+
+    def test_candidate_mutation_during_note_inspection_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            directory, _commit, version = self._candidate(Path(temp))
+            release_evidence = json.loads(
+                (directory / "release-evidence.json").read_text(encoding="utf-8")
+            )
+            archive = directory / release_evidence["artifact"]
+            original_inspect = preflight.candidate_archive_integrity.inspect_candidate
+
+            def inspect_then_mutate(*args, **kwargs):
+                result = original_inspect(*args, **kwargs)
+                archive.write_bytes(archive.read_bytes() + b"changed-after-inspection")
+                return result
+
+            with mock.patch.object(
+                preflight.candidate_archive_integrity,
+                "inspect_candidate",
+                side_effect=inspect_then_mutate,
+            ):
+                with self.assertRaisesRegex(
+                    preflight.PublicationPreflightError,
+                    "changed during bounded release-notes inspection",
+                ):
+                    preflight._candidate_member(
+                        directory,
+                        release_evidence,
+                        f"docs/releases/{version}.md",
+                    )
+
+    def test_candidate_digest_change_after_readiness_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            directory, _commit, version = self._candidate(Path(temp))
+            release_evidence = json.loads(
+                (directory / "release-evidence.json").read_text(encoding="utf-8")
+            )
+            archive = directory / release_evidence["artifact"]
+            archive.write_bytes(archive.read_bytes() + b"changed-before-inspection")
+            with self.assertRaisesRegex(
+                preflight.PublicationPreflightError,
+                "changed after readiness validation",
+            ):
+                preflight._candidate_member(
+                    directory,
+                    release_evidence,
+                    f"docs/releases/{version}.md",
+                )
 
     def test_version_mismatch_fails_closed(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
