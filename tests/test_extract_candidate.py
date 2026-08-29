@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import sys
 import tarfile
 import tempfile
@@ -32,6 +33,29 @@ class CandidateExtractionTests(unittest.TestCase):
             self.assertTrue((root / "README.md").is_file())
             self.assertTrue((root / "RELEASE-MANIFEST.json").is_file())
             self.assertFalse(any(path.is_symlink() for path in root.rglob("*")))
+
+    def test_extraction_directory_modes_are_controlled_under_permissive_umask(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            base = Path(temp)
+            result = release_builder.build_release_candidate(base / "candidate")
+            destination = base / "extracted"
+            previous_umask = os.umask(0)
+            try:
+                root = extract_candidate.extract_candidate(
+                    result["archive"], result["evidence"], destination
+                )
+            finally:
+                os.umask(previous_umask)
+
+            directories = [destination, root]
+            directories.extend(path for path in root.rglob("*") if path.is_dir())
+            self.assertGreater(len(directories), 2)
+            for directory in directories:
+                self.assertEqual(
+                    directory.stat().st_mode & 0o777,
+                    0o755,
+                    f"unexpected extraction directory mode: {directory}",
+                )
 
     def test_existing_destination_is_rejected_without_overwrite(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
