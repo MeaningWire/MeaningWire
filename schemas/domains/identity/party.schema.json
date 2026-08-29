@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:meaningwire:schema:identity:party:0.1.0",
+  "title": "MeaningWire Identity Party",
+  "description": "Vendor-neutral party attributes for a person, organization, group, or other identifiable party. Canonical record identity lives in the MeaningWire envelope record reference rather than being duplicated here.",
+  "x-meaningwire-contract-version": "0.1.0",
+  "x-meaningwire-maturity": "EXPERIMENTAL",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["party_type"],
+  "properties": {
+    "party_type": {
+      "type": "string",
+      "enum": ["person", "organization", "group", "other"]
+    },
+    "names": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/name"}
+    },
+    "identifiers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/identifier"}
+    },
+    "contact_points": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/contactPoint"}
+    }
+  },
+  "anyOf": [
+    {"required": ["names"]},
+    {"required": ["identifiers"]},
+    {"required": ["contact_points"]}
+  ],
+  "$defs": {
+    "name": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["display", "legal", "given", "family", "additional", "other"]
+        },
+        "value": {"type": "string", "minLength": 1},
+        "language": {"type": "string", "minLength": 1}
+      }
+    },
+    "identifier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value"],
+      "properties": {
+        "value": {"type": "string", "minLength": 1},
+        "scheme": {"type": "string", "minLength": 1},
+        "scheme_version": {"type": "string", "minLength": 1},
+        "scheme_agency": {"type": "string", "minLength": 1}
+      },
+      "dependentRequired": {
+        "scheme_version": ["scheme"],
+        "scheme_agency": ["scheme"]
+      }
+    },
+    "contactPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["email", "telephone", "uri", "other"]
+        },
+        "value": {"type": "string", "minLength": 1},
+        "purpose": {"type": "string", "minLength": 1},
+        "preferred": {"type": "boolean"},
+        "language": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}
