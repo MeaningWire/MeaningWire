@@ -54,6 +54,35 @@ def _mode_map(manifest: dict[str, Any]) -> dict[str, int]:
     return modes
 
 
+def _create_directory(path: Path) -> None:
+    """Create one directory component without ever granting group/other write access."""
+
+    path.mkdir(mode=0o755, exist_ok=False)
+    os.chmod(path, 0o755)
+
+
+def _ensure_directory_tree(root: Path, directory: Path) -> None:
+    """Create validated descendants one component at a time with controlled permissions."""
+
+    try:
+        relative = directory.relative_to(root)
+    except ValueError as exc:
+        raise CandidateExtractionError(
+            f"refusing directory outside extraction root: {directory}"
+        ) from exc
+
+    current = root
+    for part in relative.parts:
+        current = current / part
+        if current.exists() or current.is_symlink():
+            if current.is_symlink() or not current.is_dir():
+                raise CandidateExtractionError(
+                    f"refusing non-directory extraction parent: {current}"
+                )
+            continue
+        _create_directory(current)
+
+
 def extract_candidate(
     archive_path: str | Path,
     release_evidence_path: str | Path,
@@ -100,19 +129,23 @@ def extract_candidate(
     except candidate_archive_integrity.CandidateArchiveError as exc:
         raise CandidateExtractionError(f"candidate archive integrity failure: {exc}") from exc
 
-    if destination_path.exists():
+    if destination_path.exists() or destination_path.is_symlink():
         raise CandidateExtractionError(
             f"extraction destination already exists; refusing overwrite: {destination_path}"
+        )
+    if not destination_path.parent.is_dir():
+        raise CandidateExtractionError(
+            f"extraction destination parent does not exist: {destination_path.parent}"
         )
 
     modes = _mode_map(manifest)
     root = destination_path / f"{PROJECT}-{version}"
     try:
-        destination_path.mkdir(parents=True, exist_ok=False)
-        root.mkdir(mode=0o755)
+        _create_directory(destination_path)
+        _create_directory(root)
         for relative in sorted(files):
             output = root / relative
-            output.parent.mkdir(parents=True, exist_ok=True)
+            _ensure_directory_tree(root, output.parent)
             if output.exists() or output.is_symlink():
                 raise CandidateExtractionError(f"refusing extraction overwrite: {relative}")
             flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
