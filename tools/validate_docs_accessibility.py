@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Validate deterministic, static accessibility invariants in rendered docs.
 
-This intentionally checks only properties that can be established from built HTML.
+This intentionally checks only properties that can be established from built HTML/CSS.
 Passing this validator is not a WCAG conformance claim and does not replace manual,
 keyboard, assistive-technology, contrast, zoom/reflow, or browser testing.
 """
@@ -9,6 +9,7 @@ keyboard, assistive-technology, contrast, zoom/reflow, or browser testing.
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
@@ -17,6 +18,10 @@ from urllib.parse import urlsplit
 
 
 RESOURCE_LINK_RELS = {"stylesheet", "preload", "modulepreload", "icon", "manifest"}
+REMOTE_CSS_RESOURCE = re.compile(
+    r"(?:url\s*\(\s*|@import\s+)(?:['\"]\s*)?(?:https?:)?//",
+    re.IGNORECASE,
+)
 
 
 def _attrs(items: list[tuple[str, str | None]]) -> dict[str, str]:
@@ -189,6 +194,20 @@ def validate_page(relative: str, evidence: PageEvidence) -> list[str]:
     return errors
 
 
+def validate_css(root: Path) -> list[str]:
+    errors: list[str] = []
+    for css_file in sorted(root.rglob("*.css")):
+        relative = css_file.relative_to(root).as_posix()
+        try:
+            css = css_file.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as exc:
+            errors.append(f"{relative}: cannot inspect built CSS: {exc}")
+            continue
+        if REMOTE_CSS_RESOURCE.search(css):
+            errors.append(f"{relative}: built CSS references a remote HTTP(S) subresource")
+    return errors
+
+
 def validate(root: Path) -> list[str]:
     html_files = sorted(root.rglob("*.html"))
     if not html_files:
@@ -212,6 +231,7 @@ def validate(root: Path) -> list[str]:
         if len(paths) > 1:
             errors.append(f"duplicate rendered page title {title!r}: {', '.join(paths)}")
 
+    errors.extend(validate_css(root))
     return errors
 
 
@@ -236,7 +256,7 @@ def main() -> int:
 
     print(
         "PASS: rendered documentation has language, titles/descriptions, semantic main/heading structure, "
-        "a named skip target, image alt attributes, no autoplay media, and no remote subresources."
+        "a named skip target, image alt attributes, no autoplay media, and no remote HTML/CSS subresources."
     )
     print("NOTE: this static check is not a WCAG conformance claim.")
     return 0
