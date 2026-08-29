@@ -32,9 +32,14 @@ State whether this is for evaluation, integration testing, preview use, or stabl
 - SBOM format/version: `<for example: SPDX 2.3 transitional>`
 - SBOM SHA-256: `<digest or explicitly not provided>`
 - SBOM validation evidence: `<filename / digest / validation basis>`
+- Release-readiness report: `<filename / exact overall status>`
+- Release-readiness source commit: `<SHA>`
+- Human release authorization: `<explicit approval evidence>`
 - Build provenance/signing/attestation evidence: `<evidence or explicitly not provided>`
 
-If an evidence item is not available, say so. Do not invent a digest, workflow run, signature, SBOM validation result, provenance statement, or attestation.
+A public release must not be described as governed unless its machine-readable readiness report was `READY_FOR_HUMAN_DECISION` for the exact source commit before the separate human publication authorization was granted.
+
+If an evidence item is not available, say so. Do not invent a digest, workflow run, readiness state, approval, signature, SBOM validation result, provenance statement, or attestation.
 
 When an SBOM is provided, state its exact scope. Do not imply that an artifact-scoped or dependency-scoped SBOM inventories the operating system, build host, or other components outside its declared boundary.
 
@@ -137,6 +142,8 @@ Typical pre-release non-claims:
 
 If supply-chain evidence is present, also state what it does not establish. An SBOM, checksum, provenance record, signature, or attestation is not by itself proof that software is vulnerability-free or secure.
 
+A release-readiness `PASS` on one subsection is not equivalent to overall `READY_FOR_HUMAN_DECISION`, and that machine state is still not human publication authorization.
+
 ## Public implementation boundary
 
 Confirm that the released behavior, tests, documentation, and artifacts are reproducible from public MeaningWire sources without a private MeaningWire codebase, private schemas, hidden fixtures, or undocumented MeaningWire service dependencies.
@@ -151,7 +158,7 @@ For pre-release consumers, preserving the prior versioned artifact/configuration
 
 ## Checksums and artifacts
 
-List the published artifact filenames and checksums exactly as produced by the governed release process. Include the SBOM and its validation evidence when they are part of the release evidence set.
+List the published artifact filenames and checksums exactly as produced by the governed release process. Include the SBOM, its validation evidence, and the exact readiness report used by the publication gate when they are part of the release evidence set.
 
 ## Changelog
 

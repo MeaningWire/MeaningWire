@@ -111,6 +111,19 @@ jobs:
               tests/fixtures/domains/identity/party-person.json --json
           )
 
+      - name: Generate deterministic release-readiness reports
+        shell: bash
+        run: |
+          set -euo pipefail
+          for candidate_dir in dist/first dist/second; do
+            python tools/release_readiness.py \
+              --candidate-dir "$candidate_dir" \
+              --source-commit "$GITHUB_SHA" \
+              --fresh-environment-verified \
+              --output "${candidate_dir}/release-readiness.json"
+          done
+          cmp dist/first/release-readiness.json dist/second/release-readiness.json
+
       - name: Stage verified candidate evidence
         shell: bash
         run: |
@@ -122,6 +135,7 @@ jobs:
           cp dist/first/SHA256SUMS dist/verified/
           cp dist/first/release-evidence.json dist/verified/
           cp dist/first/spdx-validation-evidence.json dist/verified/
+          cp dist/first/release-readiness.json dist/verified/
 
       - name: Retain verified candidate evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

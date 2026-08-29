@@ -99,21 +99,26 @@ Current evidence already includes:
 - a deterministic transitional SPDX 2.3 candidate SBOM scoped to the candidate archive and governed locked validation environment;
 - exact upstream SPDX 2.3 schema identity pinning, Git-blob verification, official-schema validation, and a second MeaningWire-specific scope/digest policy validation layer;
 - deterministic SBOM validation evidence plus a `PENDING` → `PASS` release-evidence lifecycle that prevents an unvalidated SBOM from being presented as verified;
+- a deterministic machine-readable release-readiness gate that separately evaluates mechanical release-threshold evidence, launch experience, and publication capability;
+- a fail-closed future-publication contract in which `--require-ready` must reject publication while any machine-evaluated blocker remains;
+- an explicit human authority boundary that remains pending even after a future `READY_FOR_HUMAN_DECISION` result;
 - an explicit boundary that public Sigstore/GitHub attestations remain disabled during quiet pre-release candidate work and belong to the separately governed publication path.
 
 Remaining Phase 4 work includes:
 
-- create the Starlight source scaffold only after a pinned compatible Node/Astro/Starlight toolchain and committed package-manager lockfile can be validated;
+- create and validate the Starlight source scaffold with a pinned compatible Node/Astro/Starlight toolchain and committed package-manager lockfile;
+- prove the documentation site builds deterministically in CI before treating the launch-experience gate as satisfied;
 - accessible documentation site targeting WCAG 2.2 AA;
 - implement the beginner, builder, researcher/model, and integration/evaluation entry paths;
 - architecture explanations and worked mapping examples beyond the current proof;
 - standards crosswalk documentation;
 - integrate the generated schema and mapping references into local static-site search once the Starlight build is locked and reproducible;
 - evaluate and prove an eventual SPDX 3 migration path without weakening current deterministic SBOM verification;
-- implement release-only build/SBOM attestations and documented verification after the publication boundary is explicitly authorized;
-- an explicitly governed publication path from a verified candidate to a public GitHub Release.
+- implement the separately governed manual publication workflow with fail-closed readiness enforcement;
+- implement release-only build/SBOM attestations and documented public verification inside that publication boundary;
+- reconcile the machine-readable readiness report until the exact candidate reaches `READY_FOR_HUMAN_DECISION` before asking for public release authorization.
 
-Public documentation deployment, public artifact attestation, and public release publication remain outside the current automated release-agent boundary.
+Public documentation deployment, public artifact attestation, and public release publication remain outside the current automated candidate boundary.
 
 ## Phase 5 — Real-world proof
 
@@ -142,17 +147,20 @@ Before MeaningWire is presented as something people should try or adopt, the pro
 - a fully resolved, hashed dependency environment for the governed candidate target;
 - an accurately scoped, deterministically generated SBOM that passes an immutable official specification validation path plus project-specific scope validation;
 - a provenance and public-attestation strategy appropriate to the artifact actually being published;
-- a fresh-environment proof that supported public software can be built, tested, validated, and prepared for release without private repositories, private packages, hidden schemas, private test data, or undocumented services.
+- a fresh-environment proof that supported public software can be built, tested, validated, and prepared for release without private repositories, private packages, hidden schemas, private test data, or undocumented services;
+- a machine-readable readiness report that binds those candidate checks to the exact source commit and exposes remaining launch/publication blockers rather than silently treating them as satisfied.
 
-The technical mechanisms for these items are being assembled and tested during Phase 4. Meeting the threshold still requires a deliberate release-readiness reconciliation; it does not automatically publish anything.
+`tools/release_readiness.py` now performs that reconciliation. Passing the mechanical release-threshold section does not automatically make the project launch-ready: the report separately evaluates documentation/launch experience and governed publication/attestation capability.
+
+Only a future `READY_FOR_HUMAN_DECISION` report permits the release agent to ask for public release authorization. It does not grant that authorization itself.
 
 Meeting this threshold enables a release decision and, if separately authorized, a release announcement. It does not imply production readiness or stable compatibility unless those claims are separately supported.
 
 ## Phase 6 — Public preview
 
-After the release threshold is met and publication is separately authorized:
+After the readiness gate reports `READY_FOR_HUMAN_DECISION` and publication is separately authorized:
 
-- publish a versioned preview release;
+- publish a versioned preview release through the governed publication workflow;
 - announce what is actually available rather than pitching unfinished roadmap ideas;
 - publish compatibility and migration expectations with the release;
 - attach or reference the governed SBOM and verifiable provenance/attestation evidence;

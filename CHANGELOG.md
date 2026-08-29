@@ -37,6 +37,9 @@ The repository currently has a prerelease candidate version identifier, but **no
 - SBOM validation against both the official SPDX 2.3 schema and MeaningWire-specific package-scope, digest, license, purl, and relationship policy.
 - Deterministic `spdx-validation-evidence.json` and release-evidence promotion from SBOM validation `PENDING` to `PASS` only after successful validation.
 - Candidate SBOM verification documentation with explicit inventory boundaries and non-claims.
+- Machine-readable `release-readiness.json` evaluation that separates mechanical release threshold, launch experience, publication capability, and the explicit human release boundary.
+- Fail-closed `--require-ready` mode intended for a future governed publication workflow.
+- Deterministic readiness-report comparison across repeated candidate builds and retention of the report with manual candidate evidence.
 
 ### Changed
 
@@ -46,6 +49,8 @@ The repository currently has a prerelease candidate version identifier, but **no
 - Governed validation dependencies are installed fail-closed with exact hashes and binary-only artifacts for the tested candidate target.
 - Candidate `SHA256SUMS` now covers both the candidate archive and its transitional SPDX document.
 - Release notes now require explicit SBOM format, scope, digest, validation evidence, and supply-chain non-claims when an SBOM is published.
+- Release-readiness reconciliation is now executable rather than an informal future checklist: `BLOCKED` is a valid evaluated state, while `READY_FOR_HUMAN_DECISION` still requires explicit release authorization.
+- The retained candidate evidence set now includes the deterministic readiness report in addition to archive, SBOM, checksums, release evidence, and SBOM-validation evidence.
 
 ### Security
 
@@ -53,5 +58,6 @@ The repository currently has a prerelease candidate version identifier, but **no
 - Release-candidate automation uses read-only repository permissions and performs no release publication.
 - External workflow actions are immutable by commit identity rather than floating version tags.
 - Public cryptographic artifact/SBOM attestations remain disabled during quiet pre-release candidate work; no signing key, OIDC attestation permission, Sigstore transparency-log entry, or public release is created by the current candidate process.
+- A future publication workflow is expected to fail closed through the same readiness evaluator rather than maintaining a separate, weaker release criterion.
 
 No stable or public preview release has been published yet. Items remain under `Unreleased` until an explicitly authorized versioned release is actually published.
