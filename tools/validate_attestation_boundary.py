@@ -18,7 +18,7 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 FORBIDDEN = (
     (re.compile(r"(?im)^\s*id-token:\s*write\s*$"), "OIDC id-token write permission"),
     (re.compile(r"(?im)^\s*attestations:\s*write\s*$"), "attestations write permission"),
-    (re.compile(r"(?im)^\s*uses:\s*actions/attest(?:-[^@\s]+)?@"), "GitHub attestation action"),
+    (re.compile(r"(?im)^\s*(?:-\s*)?uses:\s*actions/attest(?:-[^@\s]+)?@"), "GitHub attestation action"),
     (re.compile(r"(?im)\bcosign\s+(?:sign|attest)\b"), "Sigstore cosign signing/attestation command"),
     (re.compile(r"(?im)\bsigstore\b.*\b(?:sign|attest)\b"), "Sigstore signing/attestation command"),
 )
