@@ -35,6 +35,7 @@ The repository currently has a prerelease candidate version identifier, but **no
 - Fail-closed Pagefind UI CSS diagnostics that emit hashes and an exact diff if the asset diverges across repeated full documentation builds, without weakening complete-output reproducibility checks.
 - Public accessibility evidence page that targets WCAG 2.2 AA without claiming formal conformance and separates static automated evidence from keyboard, browser, assistive-technology, contrast, zoom/reflow, and manual testing still required.
 - Dependency-free rendered HTML/CSS accessibility and integrity validation covering document language, titles/descriptions, unique titles, main/heading structure, a named working skip target, image alt presence, autoplay rejection, and remote subresource rejection while preserving byte-identical documentation builds.
+- Evidence-backed standards crosswalk that distinguishes MeaningWire's current normative JSON Schema dependency from informative standards references and comparative models without claiming equivalence, certification, affiliation, endorsement, or unproven compatibility.
 - Explicit pre-release compatibility and migration policy covering schemas, mappings, execution behavior, CLI, Adapter SDK, artifact/evidence formats, and documentation.
 - Evidence-first release-notes template for future versioned publication.
 - Immutable full-commit-SHA pinning for external GitHub Actions with CI enforcement against floating references.
