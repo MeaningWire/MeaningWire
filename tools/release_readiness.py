@@ -70,10 +70,14 @@ def _read_json(path: Path) -> dict[str, Any]:
 
 
 def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
     try:
-        return hashlib.sha256(path.read_bytes()).hexdigest()
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
     except OSError as exc:
         raise ReleaseReadinessError(f"cannot hash {path}: {exc}") from exc
+    return digest.hexdigest()
 
 
 def _parse_checksums(path: Path) -> dict[str, str]:
@@ -235,7 +239,10 @@ def evaluate_readiness(
         if not path.is_file():
             raise ReleaseReadinessError(f"required candidate evidence file is missing: {path.name}")
 
-    actual_archive_sha256 = _sha256(archive_path)
+    try:
+        actual_archive_sha256 = candidate_archive_integrity.archive_sha256(archive_path)
+    except candidate_archive_integrity.CandidateArchiveError as exc:
+        raise ReleaseReadinessError(f"candidate archive integrity failure: {exc}") from exc
     actual_sbom_sha256 = _sha256(sbom_path)
     validation_sha256 = _sha256(validation_path)
     checksums = _parse_checksums(checksums_path)
@@ -446,7 +453,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--fresh-environment-verified",
         action="store_true",
-        help="assert that the caller runs after the isolated extracted-candidate proof",
+        help="assert that the caller runs after the workflow's isolated extracted-candidate proof",
     )
     parser.add_argument(
         "--documentation-build-verified",
