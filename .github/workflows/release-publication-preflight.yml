@@ -1,0 +1,227 @@
+name: Release publication preflight (non-publishing)
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact 40-character source commit to evaluate
+        required: true
+        type: string
+      version:
+        description: Exact canonical VERSION expected at the source commit
+        required: true
+        type: string
+      tag_name:
+        description: Proposed release tag; must equal v<VERSION>
+        required: true
+        type: string
+      release_title:
+        description: Proposed GitHub Release title; must equal MeaningWire <VERSION>
+        required: true
+        type: string
+      release_notes_source:
+        description: Tracked release-notes source path packaged in the exact candidate
+        required: true
+        type: string
+      prerelease:
+        description: Proposed GitHub prerelease classification
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    env:
+      SOURCE_SHA: ${{ inputs.source_sha }}
+      RELEASE_VERSION: ${{ inputs.version }}
+      TAG_NAME: ${{ inputs.tag_name }}
+      RELEASE_TITLE: ${{ inputs.release_title }}
+      RELEASE_NOTES_SOURCE: ${{ inputs.release_notes_source }}
+    steps:
+      - name: Check out exact requested source commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source_sha }}
+          persist-credentials: false
+
+      - name: Verify exact source checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$SOURCE_SHA" = "$(git rev-parse HEAD)"
+          test "$SOURCE_SHA" = "$(printf '%s' "$SOURCE_SHA" | grep -E '^[0-9a-f]{40}$')"
+          echo "PASS: exact source commit checked out: $SOURCE_SHA"
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: ".node-version"
+          package-manager-cache: false
+
+      - name: Verify immutable pins and preflight non-publication contract
+        run: |
+          python tools/validate_workflow_pins.py
+          python tools/validate_publication_preflight_workflow.py
+
+      - name: Verify canonical requested release metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$RELEASE_VERSION" = "$(cat VERSION)"
+          test "$TAG_NAME" = "v${RELEASE_VERSION}"
+          test "$RELEASE_TITLE" = "MeaningWire ${RELEASE_VERSION}"
+          test -n "$RELEASE_NOTES_SOURCE"
+
+      - name: Install and verify locked validation environment
+        run: |
+          python tools/validate_dependency_lock.py
+          python -m pip install --disable-pip-version-check --require-hashes --only-binary=:all: -r requirements-validation.lock
+          python -m pip check
+          python tools/validate_dependency_lock.py --verify-installed
+
+      - name: Validate public contracts and deterministic behavior
+        run: |
+          python tools/validate_contracts.py
+          python tools/mapping_registry.py
+          python tools/generate_reference_docs.py --check
+          python tools/validate_jsonschema.py
+          python tools/mapping_executor.py
+          python tools/mapping_application.py
+          python tools/adapter_sdk.py
+          python tools/interoperability_pipeline.py
+          python tools/meaningwire.py doctor --json
+          python tools/meaningwire.py proof run --json
+          python -m unittest discover -s tests -v
+
+      - name: Build documentation twice and verify deterministic static output
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          rm -rf dist "$RUNNER_TEMP/meaningwire-docs-first"
+          npm run docs:build
+          test -f dist/index.html
+          test -f dist/how-it-works/index.html
+          test -f dist/accessibility/index.html
+          test -f dist/standards-crosswalk/index.html
+          test -f dist/pagefind/pagefind.js
+          python tools/validate_docs_links.py dist
+          python tools/validate_docs_accessibility.py dist
+          cp -a dist "$RUNNER_TEMP/meaningwire-docs-first"
+          rm -rf dist
+          npm run docs:build
+          python tools/validate_docs_links.py dist
+          python tools/validate_docs_accessibility.py dist
+          if ! cmp -s "$RUNNER_TEMP/meaningwire-docs-first/pagefind/pagefind-ui.css" dist/pagefind/pagefind-ui.css; then
+            sha256sum "$RUNNER_TEMP/meaningwire-docs-first/pagefind/pagefind-ui.css" dist/pagefind/pagefind-ui.css
+            diff -u "$RUNNER_TEMP/meaningwire-docs-first/pagefind/pagefind-ui.css" dist/pagefind/pagefind-ui.css || true
+            exit 1
+          fi
+          diff -qr "$RUNNER_TEMP/meaningwire-docs-first" dist
+          if find dist -type l -print -quit | grep -q .; then
+            echo "ERROR: documentation output contains a symbolic link" >&2
+            exit 1
+          fi
+
+      - name: Build deterministic candidate evidence twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf dist/candidate-first dist/candidate-second
+          python tools/release_builder.py --output-dir dist/candidate-first --source-commit "$SOURCE_SHA"
+          python tools/release_builder.py --output-dir dist/candidate-second --source-commit "$SOURCE_SHA"
+          python tools/fetch_spdx_schema.py --output "$RUNNER_TEMP/spdx-2.3-schema.json"
+          for candidate_dir in dist/candidate-first dist/candidate-second; do
+            python tools/validate_spdx_sbom.py \
+              "${candidate_dir}/MeaningWire-${RELEASE_VERSION}.spdx.json" \
+              --schema "$RUNNER_TEMP/spdx-2.3-schema.json" \
+              --release-evidence "${candidate_dir}/release-evidence.json" \
+              --output-evidence "${candidate_dir}/spdx-validation-evidence.json" \
+              --update-release-evidence
+          done
+          cmp "dist/candidate-first/MeaningWire-${RELEASE_VERSION}.tar.gz" "dist/candidate-second/MeaningWire-${RELEASE_VERSION}.tar.gz"
+          cmp "dist/candidate-first/MeaningWire-${RELEASE_VERSION}.spdx.json" "dist/candidate-second/MeaningWire-${RELEASE_VERSION}.spdx.json"
+          cmp dist/candidate-first/SHA256SUMS dist/candidate-second/SHA256SUMS
+          cmp dist/candidate-first/spdx-validation-evidence.json dist/candidate-second/spdx-validation-evidence.json
+          cmp dist/candidate-first/release-evidence.json dist/candidate-second/release-evidence.json
+
+      - name: Verify extracted candidate in isolated locked environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          candidate="$GITHUB_WORKSPACE/dist/candidate-first/MeaningWire-${RELEASE_VERSION}.tar.gz"
+          (cd dist/candidate-first && sha256sum -c SHA256SUMS)
+          rm -rf "$RUNNER_TEMP/meaningwire-extracted" "$RUNNER_TEMP/meaningwire-venv"
+          mkdir -p "$RUNNER_TEMP/meaningwire-extracted"
+          tar -xzf "$candidate" -C "$RUNNER_TEMP/meaningwire-extracted"
+          python -m venv "$RUNNER_TEMP/meaningwire-venv"
+          "$RUNNER_TEMP/meaningwire-venv/bin/python" -m pip install --disable-pip-version-check --require-hashes --only-binary=:all: -r "$RUNNER_TEMP/meaningwire-extracted/MeaningWire-${RELEASE_VERSION}/requirements-validation.lock"
+          (
+            cd "$RUNNER_TEMP/meaningwire-extracted/MeaningWire-${RELEASE_VERSION}"
+            export PYTHONNOUSERSITE=1
+            "$RUNNER_TEMP/meaningwire-venv/bin/python" -m pip check
+            "$RUNNER_TEMP/meaningwire-venv/bin/python" tools/validate_dependency_lock.py --verify-installed
+            "$RUNNER_TEMP/meaningwire-venv/bin/python" tools/meaningwire.py doctor --json
+            "$RUNNER_TEMP/meaningwire-venv/bin/python" tools/meaningwire.py proof run --json
+          )
+
+      - name: Generate deterministic readiness reports
+        shell: bash
+        run: |
+          set -euo pipefail
+          for candidate_dir in dist/candidate-first dist/candidate-second; do
+            python tools/release_readiness.py \
+              --candidate-dir "$candidate_dir" \
+              --source-commit "$SOURCE_SHA" \
+              --fresh-environment-verified \
+              --documentation-build-verified \
+              --output "${candidate_dir}/release-readiness.json"
+          done
+          cmp dist/candidate-first/release-readiness.json dist/candidate-second/release-readiness.json
+
+      - name: Prepare deterministic publication preflight evidence without publishing
+        shell: bash
+        run: |
+          set -euo pipefail
+          prerelease_flag="--not-prerelease"
+          if [ "${{ inputs.prerelease }}" = "true" ]; then
+            prerelease_flag="--prerelease"
+          fi
+          python tools/release_publication_preflight.py \
+            --candidate-dir dist/candidate-first \
+            --source-commit "$SOURCE_SHA" \
+            --version "$RELEASE_VERSION" \
+            --tag-name "$TAG_NAME" \
+            --release-title "$RELEASE_TITLE" \
+            --release-notes-source "$RELEASE_NOTES_SOURCE" \
+            "$prerelease_flag" \
+            --fresh-environment-verified \
+            --documentation-build-verified \
+            --output dist/publication-preflight.json \
+            --rendered-release-notes dist/release-notes-rendered.md
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path('dist/publication-preflight.json').read_text())
+          assert report['publication_performed'] is False
+          assert report['attestation_performed'] is False
+          assert report['human_boundary']['status'] == 'PENDING'
+          print('PASS: publication_performed=false; attestation_performed=false; human_authorization=PENDING')
+          PY
+
+      - name: Confirm non-publication boundary
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Publication preflight only. This workflow has no release, tag, package, deployment, signing, or attestation step."
