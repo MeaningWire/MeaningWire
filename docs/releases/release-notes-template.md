@@ -28,9 +28,15 @@ State whether this is for evaluation, integration testing, preview use, or stabl
 - Content manifest SHA-256: `<digest>`
 - Fresh-environment verification: `<PASS / evidence>`
 - Tested runtime/toolchain: `<for example: Linux, CPython 3.12>`
-- SBOM/signing/provenance evidence: `<evidence or explicitly not provided>`
+- SBOM artifact: `<filename or explicitly not provided>`
+- SBOM format/version: `<for example: SPDX 2.3 transitional>`
+- SBOM SHA-256: `<digest or explicitly not provided>`
+- SBOM validation evidence: `<filename / digest / validation basis>`
+- Build provenance/signing/attestation evidence: `<evidence or explicitly not provided>`
 
-If an evidence item is not available, say so. Do not invent a digest, workflow run, signature, or attestation.
+If an evidence item is not available, say so. Do not invent a digest, workflow run, signature, SBOM validation result, provenance statement, or attestation.
+
+When an SBOM is provided, state its exact scope. Do not imply that an artifact-scoped or dependency-scoped SBOM inventories the operating system, build host, or other components outside its declared boundary.
 
 ## Supported in this release
 
@@ -106,6 +112,7 @@ Example structure:
 - CLI: `<status>`
 - Adapter SDK: `<status>`
 - Release artifact/evidence format: `<status>`
+- SBOM/evidence format: `<status>`
 - Operating-system/interpreter coverage: `<status>`
 
 Avoid statements such as "fully backward compatible" unless the repository contains evidence broad enough to support that claim.
@@ -128,6 +135,8 @@ Typical pre-release non-claims:
 - not stable compatibility for experimental contracts;
 - not a support-SLA commitment.
 
+If supply-chain evidence is present, also state what it does not establish. An SBOM, checksum, provenance record, signature, or attestation is not by itself proof that software is vulnerability-free or secure.
+
 ## Public implementation boundary
 
 Confirm that the released behavior, tests, documentation, and artifacts are reproducible from public MeaningWire sources without a private MeaningWire codebase, private schemas, hidden fixtures, or undocumented MeaningWire service dependencies.
@@ -142,7 +151,7 @@ For pre-release consumers, preserving the prior versioned artifact/configuration
 
 ## Checksums and artifacts
 
-List the published artifact filenames and checksums exactly as produced by the governed release process.
+List the published artifact filenames and checksums exactly as produced by the governed release process. Include the SBOM and its validation evidence when they are part of the release evidence set.
 
 ## Changelog
 
