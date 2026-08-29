@@ -85,21 +85,23 @@ Current evidence already includes:
 - SHA-256 checksums and machine-readable release evidence;
 - CI proof that repeated candidate builds from the same commit are byte-identical in the tested Linux / CPython environment;
 - a manual-only, non-publishing release-candidate workflow with read-only repository permissions;
-- fresh-environment verification of the extracted candidate in an isolated Python environment before candidate evidence is considered verified.
+- fresh-environment verification of the extracted candidate in an isolated Python environment before candidate evidence is considered verified;
+- an accepted Astro + Starlight documentation-stack decision with explicit reproducibility, accessibility, static-output, and deployment constraints;
+- a low-cognitive-load documentation information architecture for beginner, builder, model/research, and evaluation/integration entry paths.
 
 Remaining Phase 4 work includes:
 
-- evaluate Astro + Starlight against project needs;
+- create the Starlight source scaffold only after a pinned compatible Node/Astro/Starlight toolchain and committed package-manager lockfile can be validated;
 - accessible documentation site targeting WCAG 2.2 AA;
-- beginner, builder, researcher, and integration/enterprise entry paths;
+- implement the beginner, builder, researcher/model, and integration/evaluation entry paths;
 - architecture explanations and worked mapping examples beyond the current proof;
 - standards crosswalk documentation;
-- searchable schema and mapping reference;
+- searchable schema and mapping reference generated from canonical repository data where practical;
 - release-note and compatibility/migration expectations;
 - supply-chain evidence appropriate to a public preview, including SBOM/signing/provenance decisions;
 - an explicitly governed publication path from a verified candidate to a public GitHub Release.
 
-Public release publication remains outside the current automated release-agent boundary.
+Public documentation deployment and public release publication remain outside the current automated release-agent boundary.
 
 ## Phase 5 — Real-world proof
 
