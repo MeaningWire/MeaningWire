@@ -32,6 +32,41 @@ A future action update should:
 
 A floating major tag such as `actions/checkout@v4` is not acceptable after this control is merged.
 
+## Validation dependency lock
+
+MeaningWire maintains two different dependency artifacts for different purposes:
+
+- `requirements-validation.txt` is the small direct dependency input used for ordinary cross-platform evaluation;
+- `requirements-validation.lock` is the fully resolved, exact-version, SHA-256-hashed validation environment used by governed candidate evidence for **CPython 3.12 on Linux x86-64**.
+
+The current lock resolves the `jsonschema==4.26.0` input into six packages:
+
+- `attrs==26.1.0`;
+- `jsonschema==4.26.0`;
+- `jsonschema-specifications==2025.9.1`;
+- `referencing==0.37.0`;
+- `rpds-py==2026.6.3`;
+- `typing-extensions==4.16.0`.
+
+Each locked package has an accepted wheel SHA-256. The target is deliberately narrow because `rpds-py` uses platform-specific binary wheels. The current lock is evidence for the tested GitHub-hosted Linux x86-64 candidate environment; it is not a claim that the same wheel digest applies to macOS, Windows, Linux ARM64, or another interpreter generation.
+
+Governed CI installs the lock with:
+
+```text
+pip install --require-hashes --only-binary=:all: -r requirements-validation.lock
+```
+
+This causes installation to fail if:
+
+- a transitive dependency is missing from the lock;
+- a locked version cannot satisfy the dependency graph;
+- the selected wheel digest is not one of the allowed hashes;
+- a source build would otherwise be required.
+
+`tools/validate_dependency_lock.py` additionally requires exact pins and SHA-256 hashes, verifies that the direct requirement is represented at the same version, and can verify installed package versions against the lock. The extracted-candidate proof performs this verification inside a newly created virtual environment.
+
+When the direct validation requirement is intentionally upgraded, the dependency lock must be re-resolved from public package metadata, reviewed, and proven by exact-head CI before merge. A dependency version should not be changed merely to make a hash mismatch disappear.
+
 ## SBOM direction
 
 MeaningWire intends to publish a machine-readable Software Bill of Materials with a future public release.
@@ -48,15 +83,13 @@ Reasons:
 
 CycloneDX remains a supported interoperability format worth testing. CycloneDX 1.7 is the current published specification as of this decision, while CycloneDX 2.0 has been announced for later in 2026. MeaningWire should avoid adopting a format solely because it is newer; the deciding factor is end-to-end generator, validator, attestation, and consumer interoperability.
 
-### Why SBOM generation is not enabled in this slice
+### SBOM implementation gate
 
-The current public repository has one explicitly pinned top-level Python validation dependency, but the release process does not yet maintain a fully resolved dependency lock with hashes for every transitive installed package.
+The governed validation environment now has a fully resolved target-specific lock with exact versions and accepted artifact hashes. That clears the dependency-inventory prerequisite that previously blocked useful SBOM work for this slice.
 
-An SBOM should describe what was actually built or shipped with sufficient precision to be useful. MeaningWire should therefore not create a decorative or incomplete SBOM merely to check a roadmap box.
+SBOM generation still should not be enabled merely to check a roadmap box. Before an SBOM becomes release evidence, the implementation should prove:
 
-Before SBOM generation becomes release evidence, the implementation should prove:
-
-1. the dependency input being described is explicit and reproducible;
+1. the SBOM scope is explicit—e.g. release source/artifact contents, validation runtime dependencies, or both;
 2. the SBOM generator is itself pinned and auditable;
 3. the exact SBOM specification version is explicit;
 4. the generated document validates against that specification;
@@ -120,6 +153,7 @@ Current candidate evidence may include:
 - machine-readable release evidence;
 - repeated-build byte comparison;
 - isolated extracted-candidate execution;
+- exact hashed validation dependency environment for the tested target;
 - CI run identity;
 - immutable workflow action pins.
 
