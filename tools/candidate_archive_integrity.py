@@ -72,6 +72,21 @@ def _archive_size(path: Path) -> int:
     return size
 
 
+def archive_sha256(archive_path: str | Path) -> str:
+    """Hash a candidate archive only after enforcing the compressed-size ceiling."""
+
+    path = Path(archive_path)
+    _archive_size(path)
+    digest = hashlib.sha256()
+    try:
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+    except OSError as exc:
+        raise CandidateArchiveError(f"cannot hash candidate archive: {exc}") from exc
+    return digest.hexdigest()
+
+
 def read_archive(archive_path: str | Path, version: str) -> dict[str, bytes]:
     """Return bounded unique regular-file contents after strict archive checks."""
 
