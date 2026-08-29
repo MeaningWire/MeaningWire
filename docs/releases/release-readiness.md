@@ -44,13 +44,33 @@ The fresh-environment assertion is meaningful in the governed workflows because 
 
 ### 2. Launch experience
 
-The launch-experience section currently requires evidence of the planned Starlight documentation build foundation:
+The launch-experience section separates **source presence** from **successful build evidence**.
+
+The candidate must contain the locked Starlight source foundation:
 
 - a `package.json` declaring `@astrojs/starlight`;
 - a committed `package-lock.json` in the same site root;
 - an Astro configuration file in that site root.
 
-The gate does not infer that a site is deployed merely because source exists. Public deployment remains a separate action.
+That source check alone does **not** clear launch readiness. The caller must also set:
+
+```text
+--documentation-build-verified
+```
+
+and may do so only after the governed workflow has:
+
+1. selected the pinned Node runtime from `.node-version`;
+2. installed the committed npm graph with `npm ci`;
+3. built the static Starlight output;
+4. built it again from the same exact source and locked dependency graph; and
+5. verified the two complete static output trees are byte-identical.
+
+The current governed documentation toolchain is Node `22.19.0`, npm `10.9.3`, Astro `7.2.9`, and `@astrojs/starlight` `0.41.10`.
+
+The flag is a workflow-order assertion, not a self-certifying property of source files. A caller outside the governed workflow must not set it without equivalent successful build evidence.
+
+A successful build still does not mean the site has been deployed. Public deployment remains a separate action.
 
 ### 3. Publication capability
 
@@ -97,7 +117,8 @@ The governed candidate workflow runs the readiness gate after:
 4. MeaningWire SBOM policy validation;
 5. repeated-build reproducibility checks;
 6. checksum verification;
-7. isolated extracted-candidate execution.
+7. isolated extracted-candidate execution; and
+8. the locked, repeated, byte-compared Starlight static build.
 
 It writes:
 
@@ -123,13 +144,19 @@ This gives candidate generation and publication one shared definition of readine
 
 ## Current expected state
 
-Until the documentation-site build foundation and governed public publication/attestation workflow are implemented, a properly verified current candidate is expected to have:
+Once the locked documentation build succeeds for the exact candidate, the launch-experience layer should pass while the project remains blocked on the separately governed publication and public-attestation paths:
 
 ```text
 release_threshold.status = PASS
+launch_experience.status = PASS
 overall_status = BLOCKED
 ```
 
-with blockers for the unfinished launch/publication layers.
+The expected remaining blockers are:
 
-That is the intended behavior: completed candidate evidence should be recognized, while unfinished launch infrastructure should remain visible and fail closed for any future publication attempt.
+```text
+governed_publication_path_not_ready
+public_attestation_path_not_ready
+```
+
+That is intentional. A working documentation build is evidence of a launch-capable source experience; it is not authorization to deploy, attest, or publish a release.
