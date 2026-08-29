@@ -93,6 +93,8 @@ Current evidence already includes:
 - migration-note requirements for breaking changes and an evidence-first release-note template for future versioned publication;
 - a reconciled unreleased changelog that distinguishes candidate builds from published releases;
 - immutable full-commit pins for external GitHub Actions plus CI enforcement that rejects floating workflow action references;
+- a target-specific CPython 3.12 / Linux x86-64 validation lock containing the complete currently resolved six-package environment with accepted SHA-256 wheel hashes;
+- governed CI and extracted-candidate verification that install the validation environment with `--require-hashes --only-binary=:all:` and verify installed versions against the lock;
 - an accepted supply-chain evidence direction: SPDX 3 as the preferred strategic SBOM family once tooling is proven, SLSA 1.2 provenance as the current provenance model, keyless GitHub/Sigstore identity for future release signing, and `actions/attest` rather than the deprecated `attest-sbom` path;
 - an explicit boundary that public Sigstore/GitHub attestations remain disabled during quiet pre-release candidate work and belong to the separately governed publication path.
 
@@ -104,7 +106,7 @@ Remaining Phase 4 work includes:
 - architecture explanations and worked mapping examples beyond the current proof;
 - standards crosswalk documentation;
 - integrate the generated schema and mapping references into local static-site search once the Starlight build is locked and reproducible;
-- establish reproducible dependency locking and then generate/validate an accurately scoped SBOM rather than a decorative incomplete inventory;
+- generate and validate an accurately scoped SBOM from the now-locked candidate inputs, with an explicit specification version and deterministic evidence;
 - implement release-only build/SBOM attestations and documented verification after the publication boundary is explicitly authorized;
 - an explicitly governed publication path from a verified candidate to a public GitHub Release.
 
@@ -134,6 +136,7 @@ Before MeaningWire is presented as something people should try or adopt, the pro
 - explicit statements of supported, experimental, and unfinished behavior;
 - explicit compatibility and migration expectations for the release's public surfaces;
 - immutable external CI/action inputs and documented supply-chain verification expectations;
+- a fully resolved, hashed dependency environment for the governed candidate target;
 - an accurately scoped SBOM and provenance strategy appropriate to the artifact actually being published;
 - a fresh-environment proof that supported public software can be built, tested, validated, and prepared for release without private repositories, private packages, hidden schemas, private test data, or undocumented services.
 
