@@ -12,7 +12,7 @@ import validate_contracts  # noqa: E402
 
 class ContractValidationTests(unittest.TestCase):
     def test_schema_registry_is_consistent(self) -> None:
-        self.assertEqual(validate_contracts.validate_registry(), 5)
+        self.assertEqual(validate_contracts.validate_registry(), 6)
 
     def test_fixture_manifest(self) -> None:
         self.assertEqual(validate_contracts.validate_fixture_manifest(), (2, 2))
