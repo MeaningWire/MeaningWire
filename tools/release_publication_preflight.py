@@ -13,15 +13,16 @@ import argparse
 import hashlib
 import json
 import re
-import tarfile
 from pathlib import Path
 from typing import Any
 
+import candidate_archive_integrity
 import release_readiness
 
 PROJECT = "MeaningWire"
 READY = release_readiness.READY
 _SHA40_RE = re.compile(r"^[0-9a-f]{40}$")
+_SHA64_RE = re.compile(r"^[0-9a-f]{64}$")
 _VERSION_RE = re.compile(
     r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
     r"(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?"
@@ -52,6 +53,17 @@ class PublicationPreflightError(ValueError):
 
 def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    try:
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+    except OSError as exc:
+        raise PublicationPreflightError(f"cannot hash candidate archive {path}: {exc}") from exc
+    return digest.hexdigest()
 
 
 def _json_bytes(value: Any) -> bytes:
@@ -96,32 +108,50 @@ def _release_status(version: str) -> str:
 
 
 def _candidate_member(candidate_dir: Path, release_evidence: dict[str, Any], path: str) -> bytes:
+    """Read one file only from a bounded, digest-stable validated candidate snapshot."""
+
     archive_name = release_evidence.get("artifact")
     version = release_evidence.get("version")
+    source_commit = release_evidence.get("source_commit")
+    artifact_sha256 = release_evidence.get("artifact_sha256")
+    manifest_sha256 = release_evidence.get("content_manifest_sha256")
     if not isinstance(archive_name, str) or not isinstance(version, str):
         raise PublicationPreflightError("release evidence is missing artifact/version identity")
+    if not isinstance(source_commit, str) or not _SHA40_RE.fullmatch(source_commit):
+        raise PublicationPreflightError("release evidence source commit is invalid")
+    if not isinstance(artifact_sha256, str) or not _SHA64_RE.fullmatch(artifact_sha256):
+        raise PublicationPreflightError("release evidence artifact SHA-256 is invalid")
+    if not isinstance(manifest_sha256, str) or not _SHA64_RE.fullmatch(manifest_sha256):
+        raise PublicationPreflightError("release evidence manifest SHA-256 is invalid")
+
     archive_path = candidate_dir / archive_name
-    member_name = f"{PROJECT}-{version}/{path}"
+    before_digest = _sha256_file(archive_path)
+    if before_digest != artifact_sha256:
+        raise PublicationPreflightError(
+            "candidate archive SHA-256 changed after readiness validation"
+        )
     try:
-        with tarfile.open(archive_path, "r:gz") as archive:
-            try:
-                member = archive.getmember(member_name)
-            except KeyError as exc:
-                raise PublicationPreflightError(
-                    f"release-notes source is not packaged in the exact candidate: {path}"
-                ) from exc
-            if not member.isfile():
-                raise PublicationPreflightError(
-                    f"release-notes source is not a regular candidate file: {path}"
-                )
-            extracted = archive.extractfile(member)
-            if extracted is None:
-                raise PublicationPreflightError(
-                    f"cannot read release-notes source from candidate: {path}"
-                )
-            return extracted.read()
-    except (OSError, tarfile.TarError) as exc:
-        raise PublicationPreflightError(f"cannot inspect candidate archive: {exc}") from exc
+        files, _manifest, _validation = candidate_archive_integrity.inspect_candidate(
+            archive_path,
+            version=version,
+            source_commit=source_commit,
+            expected_manifest_sha256=manifest_sha256,
+        )
+    except candidate_archive_integrity.CandidateArchiveError as exc:
+        raise PublicationPreflightError(f"candidate archive integrity failure: {exc}") from exc
+
+    after_digest = _sha256_file(archive_path)
+    if after_digest != before_digest or after_digest != artifact_sha256:
+        raise PublicationPreflightError(
+            "candidate archive changed during bounded release-notes inspection"
+        )
+
+    data = files.get(path)
+    if data is None:
+        raise PublicationPreflightError(
+            f"release-notes source is not packaged in the exact candidate: {path}"
+        )
+    return data
 
 
 def _parse_note_sections(text: str, version: str) -> dict[str, str]:
