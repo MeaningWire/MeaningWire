@@ -10,7 +10,7 @@ MeaningWire targets [WCAG 2.2 AA](https://www.w3.org/TR/WCAG22/) for its documen
 
 ## What the current site already provides
 
-MeaningWire keeps Starlight's framework-native accessibility behavior rather than replacing its core page components. Starlight documents a skip link as the first element inside the page body and a semantic header/sidebar/main page frame.
+MeaningWire keeps Starlight's framework-native accessibility behavior rather than replacing its core page components. [Starlight documents](https://starlight.astro.build/reference/overrides/#accessibility) a skip link as the first element inside the page body and a semantic header/sidebar/main page frame.
 
 MeaningWire also adds a small project-owned CSS layer that:
 
@@ -33,14 +33,14 @@ The rendered static site fails validation if a page loses high-value structural 
 - no skipped heading level inside the main content;
 - an `alt` attribute on every rendered `img` element;
 - no autoplay audio or video;
-- no HTTP(S) subresource dependency for scripts, styles, fonts, images, frames, or media;
+- no HTTP(S) subresource dependency from rendered HTML or built CSS for scripts, styles, fonts, images, frames, or media;
 - valid rendered internal documentation links.
 
 These checks run inside the same repeated static documentation build that must remain byte-identical.
 
 ## What still needs broader testing
 
-Static HTML validation does **not** establish all accessibility behavior. Before any formal conformance claim, MeaningWire still needs appropriate evidence for areas including:
+Static HTML/CSS validation does **not** establish all accessibility behavior. Before any formal conformance claim, MeaningWire still needs appropriate evidence for areas including:
 
 - complete keyboard navigation and logical focus order;
 - focus visibility and focus-not-obscured behavior across interactive states;
