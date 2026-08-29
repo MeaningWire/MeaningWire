@@ -1,0 +1,26 @@
+{
+  "party_type": "organization",
+  "names": [
+    {"kind": "display", "value": "Synthetic Example Cooperative"},
+    {"kind": "legal", "value": "Synthetic Example Cooperative"}
+  ],
+  "identifiers": [
+    {
+      "value": "ORG-001",
+      "scheme": "synthetic-organization-id",
+      "scheme_agency": "meaningwire-test-fixtures"
+    }
+  ],
+  "contact_points": [
+    {
+      "kind": "uri",
+      "value": "https://example.invalid/organizations/ORG-001",
+      "purpose": "synthetic canonical reference"
+    },
+    {
+      "kind": "telephone",
+      "value": "+1-555-0100",
+      "purpose": "synthetic test contact"
+    }
+  ]
+}

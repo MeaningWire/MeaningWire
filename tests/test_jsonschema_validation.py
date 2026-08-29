@@ -13,7 +13,7 @@ import validate_jsonschema  # noqa: E402
 
 class StandardsValidationTests(unittest.TestCase):
     def test_registered_schemas_are_valid_draft_2020_12(self) -> None:
-        self.assertEqual(validate_jsonschema.validate_registered_schemas(), 5)
+        self.assertEqual(validate_jsonschema.validate_registered_schemas(), 6)
 
     def test_fixture_manifest_with_real_json_schema_engine(self) -> None:
         self.assertEqual(validate_jsonschema.validate_fixture_manifest(), (2, 2))
