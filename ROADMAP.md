@@ -94,6 +94,8 @@ Current evidence already includes:
 - deterministic human-readable schema and mapping references generated from canonical registries, with CI drift detection so generated documentation cannot silently diverge from the JSON source of truth;
 - generated schema and mapping references integrated into Starlight navigation and local Pagefind search while the canonical JSON registries remain authoritative;
 - exact-head CI proof that both generated reference routes render canonical registry identifiers and remain byte-identical across repeated complete static builds;
+- a worked synthetic architecture walkthrough covering read-only adapter input, source envelope construction, explicit deterministic mapping, target envelope construction, transformation provenance, and the non-transfer of source approval/authority;
+- fail-closed documentation-build diagnostics that preserve the complete byte-identical-output requirement while emitting Pagefind UI CSS hashes and an exact diff if that asset ever diverges across repeated builds;
 - an explicit pre-release compatibility policy that classifies additive, corrective, breaking, security-sensitive, and internal-only changes across named compatibility surfaces;
 - migration-note requirements for breaking changes and an evidence-first release-note template for future versioned publication;
 - a reconciled unreleased changelog that distinguishes candidate builds from published releases;
@@ -114,7 +116,6 @@ Remaining Phase 4 work includes:
 
 - accessibility review and hardening toward the WCAG 2.2 AA target without claiming formal conformance before sufficient testing;
 - deepen the beginner, builder, researcher/model, and integration/evaluation paths as the public surface grows;
-- architecture explanations and worked mapping examples beyond the current proof;
 - standards crosswalk documentation;
 - evaluate and prove an eventual SPDX 3 migration path without weakening current deterministic SBOM verification;
 - implement the separately governed manual publication workflow with fail-closed readiness enforcement;
