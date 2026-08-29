@@ -23,9 +23,17 @@ See `docs/architecture/adapter-sdk-foundation.md` for the behavioral, trust, cre
 
 ## Reference adapters
 
-Initial reference adapters should be read-oriented, narrowly scoped, deterministic, and public. Their purpose is to prove the adapter boundary before authenticated vendor integrations are attempted.
+Initial reference adapters are read-oriented, narrowly scoped, deterministic, and public. Their purpose is to prove the adapter boundary before authenticated vendor integrations are attempted.
 
-The first planned reference pair is repository-local JSON object and JSON Lines input. They should use synthetic fixtures and make no vendor compatibility claim.
+Current reference implementations:
+
+- `adapters/reference/json_object.py` — reads exactly one local UTF-8 JSON object and emits one validated canonical envelope. See `docs/adapters/json-object.md`.
+
+Planned next reference implementation:
+
+- repository-local JSON Lines input using synthetic fixtures.
+
+These format adapters make no vendor compatibility claim.
 
 Reference adapters should document:
 
