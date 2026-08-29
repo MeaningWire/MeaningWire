@@ -51,12 +51,14 @@ The repository currently has a prerelease candidate version identifier, but **no
 - Release notes now require explicit SBOM format, scope, digest, validation evidence, and supply-chain non-claims when an SBOM is published.
 - Release-readiness reconciliation is now executable rather than an informal future checklist: `BLOCKED` is a valid evaluated state, while `READY_FOR_HUMAN_DECISION` still requires explicit release authorization.
 - The retained candidate evidence set now includes the deterministic readiness report in addition to archive, SBOM, checksums, release evidence, and SBOM-validation evidence.
+- GitHub workflow actions were refreshed to reviewed current v7 releases that natively declare Node 24 while preserving full-commit-SHA pinning and the existing workflow behavior used by MeaningWire.
 
 ### Security
 
 - Private security and conduct reporting paths are documented without requiring public disclosure of sensitive information.
 - Release-candidate automation uses read-only repository permissions and performs no release publication.
 - External workflow actions are immutable by commit identity rather than floating version tags.
+- Current checkout, Python setup, and artifact-upload actions now natively target Node 24 instead of relying on GitHub's forced compatibility execution of deprecated Node 20 action bundles.
 - Public cryptographic artifact/SBOM attestations remain disabled during quiet pre-release candidate work; no signing key, OIDC attestation permission, Sigstore transparency-log entry, or public release is created by the current candidate process.
 - A future publication workflow is expected to fail closed through the same readiness evaluator rather than maintaining a separate, weaker release criterion.
 
