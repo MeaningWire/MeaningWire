@@ -18,7 +18,10 @@ export default defineConfig({
       sidebar: [
         {
           label: 'Start',
-          items: [{ label: 'Getting started', slug: 'getting-started' }],
+          items: [
+            { label: 'Getting started', slug: 'getting-started' },
+            { label: 'How MeaningWire works', slug: 'how-it-works' },
+          ],
         },
         {
           label: 'Build',

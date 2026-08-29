@@ -82,8 +82,10 @@ jobs:
           rm -rf dist /tmp/meaningwire-docs-first
           npm run docs:build
           test -f dist/index.html
+          test -f dist/how-it-works/index.html
           test -f dist/reference/schemas/index.html
           test -f dist/reference/mappings/index.html
+          grep -Fq 'Approval is not transferred.' dist/how-it-works/index.html
           grep -Fq 'urn:meaningwire:schema:identity:party:0.1.0' dist/reference/schemas/index.html
           grep -Fq 'urn:meaningwire:mapping:example-crm-email:0.1.0' dist/reference/mappings/index.html
           test -f dist/pagefind/pagefind.js
@@ -91,17 +93,27 @@ jobs:
           rm -rf dist
           npm run docs:build
           test -f dist/index.html
+          test -f dist/how-it-works/index.html
           test -f dist/reference/schemas/index.html
           test -f dist/reference/mappings/index.html
+          grep -Fq 'Approval is not transferred.' dist/how-it-works/index.html
           grep -Fq 'urn:meaningwire:schema:identity:party:0.1.0' dist/reference/schemas/index.html
           grep -Fq 'urn:meaningwire:mapping:example-crm-email:0.1.0' dist/reference/mappings/index.html
           test -f dist/pagefind/pagefind.js
+          python tools/validate_docs_links.py dist
+          if ! cmp -s /tmp/meaningwire-docs-first/pagefind/pagefind-ui.css dist/pagefind/pagefind-ui.css; then
+            echo "ERROR: Pagefind UI CSS differs across repeated builds." >&2
+            sha256sum /tmp/meaningwire-docs-first/pagefind/pagefind-ui.css dist/pagefind/pagefind-ui.css
+            echo "--- Pagefind UI CSS unified diff ---"
+            diff -u /tmp/meaningwire-docs-first/pagefind/pagefind-ui.css dist/pagefind/pagefind-ui.css || true
+            exit 1
+          fi
           diff -qr /tmp/meaningwire-docs-first dist
           if find dist -type l -print -quit | grep -q .; then
             echo "ERROR: documentation output contains a symbolic link" >&2
             exit 1
           fi
-          echo "PASS: generated reference routes and Pagefind bundle exist in byte-identical Starlight output."
+          echo "PASS: worked walkthrough, generated references, and Pagefind bundle exist in byte-identical Starlight output."
       - name: Build candidate twice from exact commit
         shell: bash
         run: |
