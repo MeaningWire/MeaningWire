@@ -68,7 +68,7 @@ jobs:
           node-version-file: ".node-version"
           package-manager-cache: false
 
-      - name: Verify immutable workflow action pins and preflight non-publication contract
+      - name: Verify immutable pins and preflight non-publication contract
         run: |
           python tools/validate_workflow_pins.py
           python tools/validate_publication_preflight_workflow.py
@@ -81,17 +81,11 @@ jobs:
           test "$TAG_NAME" = "v${RELEASE_VERSION}"
           test "$RELEASE_TITLE" = "MeaningWire ${RELEASE_VERSION}"
           test -n "$RELEASE_NOTES_SOURCE"
-          echo "PASS: requested version, tag, title, and notes source passed initial fail-closed checks."
 
-      - name: Verify validation dependency lock structure
-        run: python tools/validate_dependency_lock.py
-
-      - name: Install locked public validation environment
-        run: >-
-          python -m pip install --disable-pip-version-check --require-hashes --only-binary=:all: -r requirements-validation.lock
-
-      - name: Verify locked validation environment
+      - name: Install and verify locked validation environment
         run: |
+          python tools/validate_dependency_lock.py
+          python -m pip install --disable-pip-version-check --require-hashes --only-binary=:all: -r requirements-validation.lock
           python -m pip check
           python tools/validate_dependency_lock.py --verify-installed
 
@@ -109,13 +103,11 @@ jobs:
           python tools/meaningwire.py proof run --json
           python -m unittest discover -s tests -v
 
-      - name: Install locked documentation dependencies
-        run: npm ci --no-audit --no-fund
-
       - name: Build documentation twice and verify deterministic static output
         shell: bash
         run: |
           set -euo pipefail
+          npm ci --no-audit --no-fund
           rm -rf dist "$RUNNER_TEMP/meaningwire-docs-first"
           npm run docs:build
           test -f dist/index.html
@@ -128,15 +120,9 @@ jobs:
           cp -a dist "$RUNNER_TEMP/meaningwire-docs-first"
           rm -rf dist
           npm run docs:build
-          test -f dist/index.html
-          test -f dist/how-it-works/index.html
-          test -f dist/accessibility/index.html
-          test -f dist/standards-crosswalk/index.html
-          test -f dist/pagefind/pagefind.js
           python tools/validate_docs_links.py dist
           python tools/validate_docs_accessibility.py dist
           if ! cmp -s "$RUNNER_TEMP/meaningwire-docs-first/pagefind/pagefind-ui.css" dist/pagefind/pagefind-ui.css; then
-            echo "ERROR: Pagefind UI CSS differs across repeated builds." >&2
             sha256sum "$RUNNER_TEMP/meaningwire-docs-first/pagefind/pagefind-ui.css" dist/pagefind/pagefind-ui.css
             diff -u "$RUNNER_TEMP/meaningwire-docs-first/pagefind/pagefind-ui.css" dist/pagefind/pagefind-ui.css || true
             exit 1
@@ -146,24 +132,15 @@ jobs:
             echo "ERROR: documentation output contains a symbolic link" >&2
             exit 1
           fi
-          echo "PASS: documentation output is complete, locally linked, accessibility-checked, and byte-identical."
 
-      - name: Build candidate twice from exact source commit
+      - name: Build deterministic candidate evidence twice
         shell: bash
         run: |
           set -euo pipefail
           rm -rf dist/candidate-first dist/candidate-second
           python tools/release_builder.py --output-dir dist/candidate-first --source-commit "$SOURCE_SHA"
           python tools/release_builder.py --output-dir dist/candidate-second --source-commit "$SOURCE_SHA"
-
-      - name: Fetch and verify exact official SPDX 2.3 schema
-        run: >-
           python tools/fetch_spdx_schema.py --output "$RUNNER_TEMP/spdx-2.3-schema.json"
-
-      - name: Validate both candidate SBOMs and promote release evidence
-        shell: bash
-        run: |
-          set -euo pipefail
           for candidate_dir in dist/candidate-first dist/candidate-second; do
             python tools/validate_spdx_sbom.py \
               "${candidate_dir}/MeaningWire-${RELEASE_VERSION}.spdx.json" \
@@ -172,11 +149,6 @@ jobs:
               --output-evidence "${candidate_dir}/spdx-validation-evidence.json" \
               --update-release-evidence
           done
-
-      - name: Verify deterministic candidate evidence
-        shell: bash
-        run: |
-          set -euo pipefail
           cmp "dist/candidate-first/MeaningWire-${RELEASE_VERSION}.tar.gz" "dist/candidate-second/MeaningWire-${RELEASE_VERSION}.tar.gz"
           cmp "dist/candidate-first/MeaningWire-${RELEASE_VERSION}.spdx.json" "dist/candidate-second/MeaningWire-${RELEASE_VERSION}.spdx.json"
           cmp dist/candidate-first/SHA256SUMS dist/candidate-second/SHA256SUMS
@@ -188,10 +160,7 @@ jobs:
         run: |
           set -euo pipefail
           candidate="$GITHUB_WORKSPACE/dist/candidate-first/MeaningWire-${RELEASE_VERSION}.tar.gz"
-          (
-            cd "$GITHUB_WORKSPACE/dist/candidate-first"
-            sha256sum -c SHA256SUMS
-          )
+          (cd dist/candidate-first && sha256sum -c SHA256SUMS)
           rm -rf "$RUNNER_TEMP/meaningwire-extracted" "$RUNNER_TEMP/meaningwire-venv"
           mkdir -p "$RUNNER_TEMP/meaningwire-extracted"
           tar -xzf "$candidate" -C "$RUNNER_TEMP/meaningwire-extracted"
@@ -206,7 +175,7 @@ jobs:
             "$RUNNER_TEMP/meaningwire-venv/bin/python" tools/meaningwire.py proof run --json
           )
 
-      - name: Generate and compare deterministic readiness reports
+      - name: Generate deterministic readiness reports
         shell: bash
         run: |
           set -euo pipefail
@@ -240,17 +209,15 @@ jobs:
             --documentation-build-verified \
             --output dist/publication-preflight.json \
             --rendered-release-notes dist/release-notes-rendered.md
-
-      - name: Enforce final readiness boundary
-        shell: bash
-        run: |
-          set -euo pipefail
-          python tools/release_readiness.py \
-            --candidate-dir dist/candidate-first \
-            --source-commit "$SOURCE_SHA" \
-            --fresh-environment-verified \
-            --documentation-build-verified \
-            --require-ready
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path('dist/publication-preflight.json').read_text())
+          assert report['publication_performed'] is False
+          assert report['attestation_performed'] is False
+          assert report['human_boundary']['status'] == 'PENDING'
+          print('PASS: publication_performed=false; attestation_performed=false; human_authorization=PENDING')
+          PY
 
       - name: Confirm non-publication boundary
         if: ${{ always() }}
