@@ -31,6 +31,13 @@ export default defineConfig({
           label: 'Understand',
           items: [{ label: 'Researcher & model', slug: 'researcher-model' }],
         },
+        {
+          label: 'Reference',
+          items: [
+            { label: 'Schemas', slug: 'reference/schemas' },
+            { label: 'Mappings', slug: 'reference/mappings' },
+          ],
+        },
       ],
     }),
   ],
