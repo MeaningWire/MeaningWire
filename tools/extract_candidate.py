@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import os
 import re
@@ -29,13 +28,6 @@ def _read_json(path: Path) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise CandidateExtractionError("release evidence root must be an object")
     return value
-
-
-def _sha256(path: Path) -> str:
-    try:
-        return hashlib.sha256(path.read_bytes()).hexdigest()
-    except OSError as exc:
-        raise CandidateExtractionError(f"cannot hash candidate archive {path}: {exc}") from exc
 
 
 def _mode_map(manifest: dict[str, Any]) -> dict[str, int]:
@@ -116,7 +108,12 @@ def extract_candidate(
         )
     if not isinstance(archive_sha256, str) or not _SHA64_RE.fullmatch(archive_sha256):
         raise CandidateExtractionError("release evidence artifact_sha256 is invalid")
-    if _sha256(archive) != archive_sha256:
+
+    try:
+        actual_archive_sha256 = candidate_archive_integrity.archive_sha256(archive)
+    except candidate_archive_integrity.CandidateArchiveError as exc:
+        raise CandidateExtractionError(f"candidate archive integrity failure: {exc}") from exc
+    if actual_archive_sha256 != archive_sha256:
         raise CandidateExtractionError("candidate archive SHA-256 does not match release evidence")
 
     try:

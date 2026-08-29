@@ -55,17 +55,6 @@ def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def _sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    try:
-        with path.open("rb") as handle:
-            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-                digest.update(chunk)
-    except OSError as exc:
-        raise PublicationPreflightError(f"cannot hash candidate archive {path}: {exc}") from exc
-    return digest.hexdigest()
-
-
 def _json_bytes(value: Any) -> bytes:
     return (json.dumps(value, indent=2, sort_keys=True) + "\n").encode("utf-8")
 
@@ -125,7 +114,10 @@ def _candidate_member(candidate_dir: Path, release_evidence: dict[str, Any], pat
         raise PublicationPreflightError("release evidence manifest SHA-256 is invalid")
 
     archive_path = candidate_dir / archive_name
-    before_digest = _sha256_file(archive_path)
+    try:
+        before_digest = candidate_archive_integrity.archive_sha256(archive_path)
+    except candidate_archive_integrity.CandidateArchiveError as exc:
+        raise PublicationPreflightError(f"candidate archive integrity failure: {exc}") from exc
     if before_digest != artifact_sha256:
         raise PublicationPreflightError(
             "candidate archive SHA-256 changed after readiness validation"
@@ -140,7 +132,10 @@ def _candidate_member(candidate_dir: Path, release_evidence: dict[str, Any], pat
     except candidate_archive_integrity.CandidateArchiveError as exc:
         raise PublicationPreflightError(f"candidate archive integrity failure: {exc}") from exc
 
-    after_digest = _sha256_file(archive_path)
+    try:
+        after_digest = candidate_archive_integrity.archive_sha256(archive_path)
+    except candidate_archive_integrity.CandidateArchiveError as exc:
+        raise PublicationPreflightError(f"candidate archive integrity failure: {exc}") from exc
     if after_digest != before_digest or after_digest != artifact_sha256:
         raise PublicationPreflightError(
             "candidate archive changed during bounded release-notes inspection"

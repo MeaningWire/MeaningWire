@@ -6,6 +6,7 @@ from __future__ import annotations
 import gzip
 import hashlib
 import json
+import os
 import re
 import tarfile
 from pathlib import Path
@@ -70,6 +71,40 @@ def _archive_size(path: Path) -> int:
             f"({MAX_ARCHIVE_BYTES} bytes)"
         )
     return size
+
+
+def archive_sha256(archive_path: str | Path) -> str:
+    """Hash a candidate archive while enforcing the compressed-size ceiling."""
+
+    path = Path(archive_path)
+    _archive_size(path)
+    digest = hashlib.sha256()
+    hashed_bytes = 0
+    try:
+        with path.open("rb") as handle:
+            opened_size = os.fstat(handle.fileno()).st_size
+            if opened_size > MAX_ARCHIVE_BYTES:
+                raise CandidateArchiveError(
+                    "candidate archive compressed size exceeds safety limit after open "
+                    f"({MAX_ARCHIVE_BYTES} bytes)"
+                )
+            while True:
+                remaining = MAX_ARCHIVE_BYTES - hashed_bytes
+                chunk = handle.read(min(1024 * 1024, remaining + 1))
+                if not chunk:
+                    break
+                hashed_bytes += len(chunk)
+                if hashed_bytes > MAX_ARCHIVE_BYTES:
+                    raise CandidateArchiveError(
+                        "candidate archive compressed size exceeds safety limit during hashing "
+                        f"({MAX_ARCHIVE_BYTES} bytes)"
+                    )
+                digest.update(chunk)
+    except CandidateArchiveError:
+        raise
+    except OSError as exc:
+        raise CandidateArchiveError(f"cannot hash candidate archive: {exc}") from exc
+    return digest.hexdigest()
 
 
 def read_archive(archive_path: str | Path, version: str) -> dict[str, bytes]:
