@@ -8,3 +8,12 @@ license: Apache-2.0
 repository-code: "https://github.com/MeaningWire/MeaningWire"
 url: "https://github.com/MeaningWire/MeaningWire"
 abstract: "Vendor-neutral semantic interoperability framework for systems, data, APIs, events, AI, and automation."
+keywords:
+  - semantic interoperability
+  - canonical data model
+  - data integration
+  - API integration
+  - event interoperability
+  - provenance
+  - schema mapping
+  - vendor-neutral
