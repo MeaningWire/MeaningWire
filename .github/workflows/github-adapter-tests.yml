@@ -1,0 +1,47 @@
+name: GitHub reference adapter tests
+
+on:
+  pull_request:
+    paths:
+      - "adapters/github/**"
+      - ".github/workflows/github-adapter-tests.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "adapters/github/**"
+      - ".github/workflows/github-adapter-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run deterministic adapter tests
+        run: python -m unittest discover -s adapters/github/tests -p "test_*.py" -v
+
+      - name: Exercise public GitHub API adapter
+        run: |
+          python adapters/github/github_repository_adapter.py MeaningWire/MeaningWire > /tmp/meaningwire-github.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          payload = json.loads(Path('/tmp/meaningwire-github.json').read_text())
+          assert payload['adapter_output'] == 'github.repository.snapshot.v0'
+          assert payload['source']['system'] == 'github'
+          assert payload['repository']['full_name'] == 'MeaningWire/MeaningWire'
+          assert payload['mapping']['canonical_contract'] is None
+          print('GitHub API smoke test passed')
+          PY
