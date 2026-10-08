@@ -64,8 +64,17 @@ def encode_relational(artifact: dict[str, Any]) -> dict[str, Any]:
 
 
 def decode_relational(encoded: dict[str, Any]) -> dict[str, Any]:
-    """Reconstruct named JSON using the same external tuple-layout contract."""
-    if encoded.get("layout") != "case-004c-v1":
+    """Reconstruct named JSON, rejecting unrecognized or incomplete envelopes."""
+    envelope_fields = {"layout", "root", "entities", "relations", "claims", "events", "policy"}
+    if not isinstance(encoded, dict):
+        raise ValueError("relational envelope must be an object")
+    actual_fields = set(encoded)
+    if actual_fields != envelope_fields:
+        raise ValueError(
+            f"relational envelope mismatch: missing={sorted(envelope_fields - actual_fields)}, "
+            f"unexpected={sorted(actual_fields - envelope_fields)}"
+        )
+    if encoded["layout"] != "case-004c-v1":
         raise ValueError("unsupported relational layout")
     def records(rows: list[list[Any]], fields: tuple[str, ...], where: str) -> list[dict[str, Any]]:
         output = []
