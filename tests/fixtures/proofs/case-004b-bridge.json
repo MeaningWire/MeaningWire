@@ -1,0 +1,49 @@
+{
+  "artifact_id": "CASE-004B-01",
+  "artifact_kind": "structural-inspection-record",
+  "schema_version": "0.1.0-lab",
+  "entities": [
+    {"id": "bridge-B", "type": "bridge", "label": "Bridge B"},
+    {"id": "member-M", "type": "structural-member", "label": "Member M"},
+    {"id": "crack-C", "type": "defect", "label": "Crack C"},
+    {"id": "inspector-I", "type": "source", "label": "Inspector I"}
+  ],
+  "relations": [
+    {"subject": "bridge-B", "predicate": "contains", "object": "member-M"},
+    {"subject": "member-M", "predicate": "has_defect", "object": "crack-C"},
+    {"subject": "member-M", "predicate": "structural_role", "object": "load-bearing"},
+    {"subject": "inspector-I", "predicate": "reported", "object": "crack-C"}
+  ],
+  "claims": [
+    {
+      "id": "claim-C1",
+      "subject": "crack-C",
+      "predicate": "condition",
+      "object": "present",
+      "epistemic_status": "reported_not_verified",
+      "confidence": 0.92,
+      "scope": "member-M",
+      "observed_at": "2026-10-08T10:00:00-05:00",
+      "source_ref": "inspector-I",
+      "resolution": "unresolved",
+      "significance": "manual_review_if_verified"
+    }
+  ],
+  "events": [
+    {
+      "id": "event-E1",
+      "type": "inspection_reported",
+      "occurred_at": "2026-10-08T10:00:00-05:00",
+      "actor_ref": "inspector-I",
+      "claim_ref": "claim-C1"
+    }
+  ],
+  "policy": {
+    "id": "bridge-review-policy",
+    "version": "1.0",
+    "rule": "A reported defect in a load-bearing member requires manual review; a reported defect alone does not establish that the whole bridge is unsafe.",
+    "reported_defect_action": "manual_review",
+    "verified_defect_action": "assess_risk",
+    "whole_bridge_unsafe_requires": "separate_authorized_assessment"
+  }
+}
