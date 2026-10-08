@@ -1,106 +1,118 @@
 # CASE-001 — MusicXML Simultaneity
 
-**Status:** SETUP  
-**Hypothesis under test:** DISTINCTION + RELATION + ORDER + REFERENCE FRAME can represent and reconstruct a small MusicXML score without semantic loss.
+**Status:** PARTIAL PASS / HARNESS EXECUTED  
+**Hypothesis under test:** DISTINCTION + RELATION + ORDER + REFERENCE FRAME can represent and reconstruct a small MusicXML score without losing required event semantics.
 
 ## Adversarial feature
 
-Three notes begin at the same musical time:
+The test includes **same-time events inside one part** (a chord) plus an independent second part. This attacks the assumption that musical ORDER is one-dimensional.
 
-- C4
-- E4
-- G4
+A representation that collapses the chord into a strict sequence would fail.
 
-All belong to the same part and measure.
+## External real-world reference
 
-A representation that collapses these into a single linear sequence would fail.
+A real public MusicXML 4.0 fixture was inspected at:
+
+https://github.com/VjiaoBlack/claude-debussy/blob/main/examples/twinkle.musicxml
+
+Its structure includes two independent parts (Melody and Bass) and overlapping events across part timelines. The source file was not copied into this repository because its license was not established from the available files.
+
+## Executed local fixture
+
+MeaningWire uses an original minimal MusicXML 4.0 fixture in this repository:
+
+- Melody: C4/E4/G4 simultaneously, then D4.
+- Bass: a whole-note C3 beginning at the same time.
+- Both parts use the same measure/time context.
 
 ## Ground-truth invariants
 
-The source representation must establish, at minimum:
+The executed comparison checks:
 
-1. Three distinct note events exist.
-2. All three notes belong to the same part.
-3. All three occur in the same measure.
-4. All three begin at the same logical time position.
-5. Each has its own pitch identity.
-6. Each has its own duration.
-7. Their simultaneity is preserved during reconstruction.
-8. Part/measure context is preserved.
-9. Any source metadata used to interpret timing remains distinguishable from the note events.
+1. Part identity and names.
+2. Number of note events.
+3. Note pitch.
+4. Measure membership.
+5. Start position.
+6. Duration.
+7. Simultaneous-note grouping.
+
+The checker compares normalized semantic invariants rather than raw XML bytes.
 
 ## Candidate MeaningWire model
 
 ### DISTINCTIONS
 
 - score
-- part
+- parts
 - measure
-- note:C4
-- note:E4
-- note:G4
-- pitch:C4
-- pitch:E4
-- pitch:G4
-- duration:quarter
+- note events
+- pitch values
+- durations
 
 ### RELATIONS
 
 - part contains measure
-- measure contains note:C4
-- measure contains note:E4
-- measure contains note:G4
-- note:C4 has-pitch pitch:C4
-- note:E4 has-pitch pitch:E4
-- note:G4 has-pitch pitch:G4
-- each note has-duration duration:quarter
-- each note belongs-to part
+- measure contains note
+- note has-pitch pitch
+- note participates-in simultaneity relation where applicable
 
 ### ORDER
 
-Do **not** impose C4 < E4 < G4.
+Each part gets an independent timeline. Multiple events may share the same position.
 
-Instead preserve a shared temporal position:
-
-- note:C4 starts-at T0
-- note:E4 starts-at T0
-- note:G4 starts-at T0
-
-The experiment must permit multiple events to occupy the same position and, if necessary, maintain additional independent orders such as measure order and pitch ordering.
+This avoids incorrectly encoding a chord as C4 < E4 < G4.
 
 ### REFERENCE FRAME
 
 At minimum:
 
+- source format/version
 - score
 - part
 - measure
 - timing/division convention
 
-The exact MusicXML source metadata will determine the final reference-frame inventory.
+## Automated execution
 
-## Required comparison
+The local invariant checker returned:
 
-Compare source and reconstructed artifact semantically, not byte-for-byte.
+**PASS**
 
-Record:
+The normalized source and reconstructed representations matched for:
 
-- identity loss
-- relation loss
-- order/simultaneity loss
-- reference-frame loss
-- constraint loss
-- provenance loss
-- precision loss
-- semantic loss
-- ambiguity
+- 2 parts
+- 5 note events
+- the C4/E4/G4 simultaneity group
+- note positions
+- durations
+- pitch identities
 
-## Current result
+## Result
 
-**BLOCKED — source artifact not yet attached or selected.**
+**PARTIAL PASS**
 
-This is intentional. This document does not claim that the hypothesis has passed a real MusicXML round trip.
+Why not full PASS?
 
-## Next execution step
+Because this execution proves the **candidate representation and invariant harness** on an original controlled fixture. It does not yet prove a complete, production-grade MusicXML → MeaningWire → MusicXML implementation.
 
-Use one actual, minimal MusicXML artifact, parse its semantics, create the MeaningWire representation, reconstruct it, and run the invariant comparison.
+## Remaining test
+
+Implement an explicit serialized MeaningWire representation as an intermediary, then perform:
+
+MusicXML → MeaningWire → MusicXML → semantic comparison
+
+with broader MusicXML features such as:
+
+- ties
+- rests
+- multiple voices
+- tuplets
+- dynamics
+- articulations
+- key/time changes
+- lyrics
+- metadata
+- nested/complex ordering
+
+The test must record every semantic loss or required extension to D/R/O/F.
