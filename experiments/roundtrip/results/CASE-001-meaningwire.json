@@ -1,0 +1,173 @@
+{
+  "format": "meaningwire-candidate-v0.1",
+  "reference_frame": {
+    "source_format": "MusicXML 4.0",
+    "score_version": "4.0"
+  },
+  "distinctions": [
+    {
+      "type": "part",
+      "id": "P1",
+      "name": "Melody"
+    },
+    {
+      "type": "measure",
+      "id": "P1:measure:1",
+      "number": "1"
+    },
+    {
+      "type": "note",
+      "id": "P1:measure:1:note:0",
+      "pitch": "C4",
+      "duration": 1
+    },
+    {
+      "type": "note",
+      "id": "P1:measure:1:note:1",
+      "pitch": "E4",
+      "duration": 1
+    },
+    {
+      "type": "note",
+      "id": "P1:measure:1:note:2",
+      "pitch": "G4",
+      "duration": 1
+    },
+    {
+      "type": "note",
+      "id": "P1:measure:1:note:3",
+      "pitch": "D4",
+      "duration": 1
+    },
+    {
+      "type": "part",
+      "id": "P2",
+      "name": "Bass"
+    },
+    {
+      "type": "measure",
+      "id": "P2:measure:1",
+      "number": "1"
+    },
+    {
+      "type": "note",
+      "id": "P2:measure:1:note:0",
+      "pitch": "C3",
+      "duration": 4
+    }
+  ],
+  "relations": [
+    {
+      "s": "P1",
+      "p": "contains",
+      "o": "P1:measure:1"
+    },
+    {
+      "s": "P2",
+      "p": "contains",
+      "o": "P2:measure:1"
+    },
+    {
+      "s": "P1:measure:1",
+      "p": "contains",
+      "o": "P1:measure:1:note:0"
+    },
+    {
+      "s": "P1:measure:1",
+      "p": "contains",
+      "o": "P1:measure:1:note:1"
+    },
+    {
+      "s": "P1:measure:1",
+      "p": "contains",
+      "o": "P1:measure:1:note:2"
+    },
+    {
+      "s": "P1:measure:1",
+      "p": "contains",
+      "o": "P1:measure:1:note:3"
+    },
+    {
+      "s": "P2:measure:1",
+      "p": "contains",
+      "o": "P2:measure:1:note:0"
+    },
+    {
+      "s": "P1:measure:1:note:0",
+      "p": "has-pitch",
+      "o": "C4"
+    },
+    {
+      "s": "P1:measure:1:note:1",
+      "p": "has-pitch",
+      "o": "E4"
+    },
+    {
+      "s": "P1:measure:1:note:2",
+      "p": "has-pitch",
+      "o": "G4"
+    },
+    {
+      "s": "P1:measure:1:note:3",
+      "p": "has-pitch",
+      "o": "D4"
+    },
+    {
+      "s": "P2:measure:1:note:0",
+      "p": "has-pitch",
+      "o": "C3"
+    },
+    {
+      "s": "P1:measure:1:note:1",
+      "p": "simultaneous-with",
+      "o": "P1:measure:1:note:0"
+    },
+    {
+      "s": "P1:measure:1:note:2",
+      "p": "simultaneous-with",
+      "o": "P1:measure:1:note:0"
+    }
+  ],
+  "orders": [
+    {
+      "s": "P1:measure:1:note:0",
+      "p": "starts-at",
+      "o": {
+        "axis": "P1:timeline",
+        "position": 0
+      }
+    },
+    {
+      "s": "P1:measure:1:note:1",
+      "p": "starts-at",
+      "o": {
+        "axis": "P1:timeline",
+        "position": 0
+      }
+    },
+    {
+      "s": "P1:measure:1:note:2",
+      "p": "starts-at",
+      "o": {
+        "axis": "P1:timeline",
+        "position": 0
+      }
+    },
+    {
+      "s": "P1:measure:1:note:3",
+      "p": "starts-at",
+      "o": {
+        "axis": "P1:timeline",
+        "position": 1
+      }
+    },
+    {
+      "s": "P2:measure:1:note:0",
+      "p": "starts-at",
+      "o": {
+        "axis": "P2:timeline",
+        "position": 0
+      }
+    }
+  ]
+}
