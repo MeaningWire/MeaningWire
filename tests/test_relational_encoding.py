@@ -43,12 +43,35 @@ class RelationalEncodingTests(unittest.TestCase):
         self.assertFalse(report["network_access"])
 
     def test_decoder_rejects_unknown_layout_and_wrong_tuple_arity(self) -> None:
-        with self.assertRaises(ValueError):
-            relational_encoding.decode_relational({"layout": "unknown"})
         encoded = relational_encoding.encode_relational(self.artifact)
-        encoded["entities"][0].pop()
-        with self.assertRaises(ValueError):
-            relational_encoding.decode_relational(encoded)
+        unknown_layout = dict(encoded, layout="unknown")
+        with self.assertRaisesRegex(ValueError, "unsupported relational layout"):
+            relational_encoding.decode_relational(unknown_layout)
+        bad_arity = relational_encoding.encode_relational(self.artifact)
+        bad_arity["entities"][0].pop()
+        with self.assertRaisesRegex(ValueError, "tuple arity mismatch"):
+            relational_encoding.decode_relational(bad_arity)
+
+    def test_decoder_rejects_missing_and_unknown_envelope_fields(self) -> None:
+        encoded = relational_encoding.encode_relational(self.artifact)
+        missing = dict(encoded)
+        missing.pop("events")
+        with self.assertRaisesRegex(ValueError, "missing=.*events"):
+            relational_encoding.decode_relational(missing)
+        unknown = dict(encoded, silently_ignored="must not disappear")
+        with self.assertRaisesRegex(ValueError, "unexpected=.*silently_ignored"):
+            relational_encoding.decode_relational(unknown)
+
+    def test_null_values_and_duplicate_relations_survive_structurally(self) -> None:
+        artifact = json.loads(json.dumps(self.artifact))
+        artifact["claims"][0]["resolution"] = None
+        artifact["relations"].append(dict(artifact["relations"][0]))
+        encoded = relational_encoding.encode_relational(artifact)
+        reconstructed = relational_encoding.decode_relational(encoded)
+        self.assertEqual(
+            relational_encoding.canonical_bytes(artifact),
+            relational_encoding.canonical_bytes(reconstructed),
+        )
 
 
 if __name__ == "__main__":
