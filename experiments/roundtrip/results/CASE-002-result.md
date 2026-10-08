@@ -1,39 +1,52 @@
 # CASE-002 Result
 
-**Status:** PARTIAL PASS
+**Status:** PARTIAL PASS / EVENT MODEL VALIDATED
 
-## Tested
+## Executed
 
-MusicXML fixture with:
+The CASE-002 fixture was parsed and normalized into **7 semantic events**:
 
-- multiple voices;
-- backup-based timeline rewind;
-- rests;
-- 3:2 tuplets;
-- cross-measure tie;
-- independent voice timelines.
+- 5 events in measure 1 across voices 1 and 2;
+- 2 events in measure 2;
+- 3:2 tuplet metadata on the voice-1 triplet;
+- tie start on C4 in measure 1 and tie stop on C4 in measure 2;
+- explicit rest events;
+- `backup` rewind separating the voice timelines.
 
-## Observed
+The normalized event positions were:
 
-The event normalization preserves the tested semantic invariants:
+- voice 1: C4@0, D4@1, E4@2, C4@12;
+- voice 2: REST@0, G3@1, REST@12.
 
-- note/rest distinction;
-- voice;
-- measure;
-- start;
-- duration;
-- tuplet ratio;
-- tie markers;
-- independent event ordering.
+## Findings
 
-## Finding
+The tested semantics remain representable when one MusicXML measure contains multiple voice timelines.
 
-The experiment strengthens the case that ORDER should be modeled as **multiple typed/independent order relations or axes**, rather than one universal sequence.
+This strengthens the hypothesis that **ORDER is not one universal sequence**. It is better treated as a collection of typed/independent order axes or relations.
 
-It also separates **source encoding operations** from **underlying semantics**: MusicXML `backup` is an encoding instruction, not necessarily a MeaningWire primitive.
+The experiment also separates:
 
-## Limitation
+- **source encoding operation:** MusicXML `backup`;
+- **underlying semantics:** voice-specific event ordering and positions.
 
-This is still an event-level test, not complete MusicXML round-trip interoperability.
+MeaningWire should preserve the latter and retain the former only when required for source reconstruction/provenance.
 
-Next: cross-voice simultaneity plus differing tuplets and meter changes.
+## Result
+
+**PARTIAL PASS**
+
+The candidate event model preserves the tested semantic distinctions and ordering structures.
+
+This is not yet a complete MusicXML → MeaningWire → MusicXML round trip.
+
+## Next falsification target
+
+Add:
+
+- simultaneous events across multiple voices;
+- different tuplet ratios in different voices;
+- meter changes;
+- overlapping ties;
+- rests between simultaneous events.
+
+Then test whether the current D/R/O/F representation still suffices without ad-hoc exceptions.
