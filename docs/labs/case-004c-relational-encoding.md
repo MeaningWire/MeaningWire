@@ -28,7 +28,7 @@ python -m unittest tests/test_relational_encoding.py -v
 - **Semantic behavior:** both original and reconstructed artifacts are passed to the same `reason()` interpreter and compared across its nine observable output groups.
 - **Structural fidelity:** the decoded relational artifact is compared with the original fixture using deterministic canonical JSON.
 
-The encoder rejects unexpected or missing record fields rather than silently discarding them. The decoder rejects unknown layout identifiers and tuple-arity mismatches.
+The encoder rejects unexpected or missing record fields rather than silently discarding them. The decoder rejects unknown layout identifiers, missing/extra envelope fields, and tuple-arity mismatches. Tests also check that explicit null values and duplicate relation rows survive structural reconstruction. These tests exercise a small set of adversarial inputs, not all malformed inputs.
 
 ## Cost accounting caveat
 
@@ -38,7 +38,7 @@ The report includes the serialized artifact bytes, but **excludes** the shared t
 
 - **PASS** means the current fixture reconstructs and its declared behavior outputs remain equal under this specific encoding and decoder.
 - A smaller byte count means only that this tuple encoding is smaller for this fixture, under the stated exclusions.
-- It does not establish that MeaningWire's primitives are minimal, that a generic relational substrate is best, or that equivalence holds for untested artifacts and queries.
+- It does not establish that MeaningWire's primitives are minimal, that a generic relational substrate is best, or that equivalence holds for untested artifacts and queries. The CASE-004B interpreter currently inspects one fixed claim ID; exact reconstruction of additional or contradictory claims does not prove the interpreter reasons correctly over them.
 - The artifact is synthetic; confidence and policy values are test data only.
 
 ## Next falsification target
