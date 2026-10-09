@@ -135,6 +135,64 @@ class CrossInterpreterConsistencyTests(unittest.TestCase):
             1,
         )
 
+    def test_numeric_values_remain_distinct_without_explicit_domain_rule(self) -> None:
+        artifact = self.conflicting_artifact()
+        for claim in artifact["claims"]:
+            if claim.get("id") == "claim-C1":
+                claim["object"] = 1
+            elif claim.get("id") == "claim-C2":
+                claim["object"] = 1.0
+
+        view = cross_interpreter_consistency.integrated_view(artifact)
+        self.assertEqual(view["conflict_views"]["historical_disagreement_count"], 1)
+        self.assertEqual(view["conflict_views"]["active_unresolved_conflict_count"], 1)
+        self.assertEqual(view["temporal_analysis"]["groups"][0]["status"],
+                         "conflicting_verified_claims")
+
+    def test_explicit_numeric_rule_normalizes_equal_numbers_in_both_views(self) -> None:
+        artifact = self.conflicting_artifact()
+        for claim in artifact["claims"]:
+            if claim.get("id") == "claim-C1":
+                claim["object"] = 1
+            elif claim.get("id") == "claim-C2":
+                claim["object"] = 1.0
+        artifact["value_equality_rules"] = [{
+            "predicate": "condition",
+            "rule": "numeric_equivalence",
+        }]
+
+        view = cross_interpreter_consistency.integrated_view(artifact)
+        self.assertEqual(view["conflict_views"]["historical_disagreement_count"], 0)
+        self.assertEqual(view["conflict_views"]["active_unresolved_conflict_count"], 0)
+        self.assertEqual(view["temporal_analysis"]["groups"][0]["status"],
+                         "no_verified_conflict")
+        self.assertEqual(view["temporal_analysis"]["value_equality_contract"]["rule_count"], 1)
+
+    def test_numeric_rule_does_not_coerce_strings_or_booleans(self) -> None:
+        artifact = self.conflicting_artifact()
+        for claim in artifact["claims"]:
+            if claim.get("id") == "claim-C1":
+                claim["object"] = 1
+            elif claim.get("id") == "claim-C2":
+                claim["object"] = "1"
+        artifact["value_equality_rules"] = [{
+            "predicate": "condition",
+            "rule": "numeric_equivalence",
+        }]
+
+        view = cross_interpreter_consistency.integrated_view(artifact)
+        self.assertEqual(view["conflict_views"]["historical_disagreement_count"], 1)
+        self.assertEqual(view["conflict_views"]["active_unresolved_conflict_count"], 1)
+
+    def test_overlapping_equality_rules_are_rejected_as_ambiguous(self) -> None:
+        artifact = self.conflicting_artifact()
+        artifact["value_equality_rules"] = [
+            {"predicate": "condition", "rule": "canonical_json"},
+            {"predicate": "condition", "rule": "numeric_equivalence"},
+        ]
+        with self.assertRaisesRegex(ValueError, "ambiguous value_equality_rules"):
+            cross_interpreter_consistency.integrated_view(artifact)
+
     def test_combined_outputs_survive_json_and_relational_round_trips(self) -> None:
         artifact = self.conflicting_artifact()
         artifact["relations"].append({
