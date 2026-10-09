@@ -45,21 +45,30 @@ class CrossInterpreterConsistencyTests(unittest.TestCase):
         })
         return artifact
 
-    def test_raw_and_temporal_views_agree_when_no_supersession_exists(self) -> None:
+    def test_both_views_report_conflict_when_no_supersession_exists(self) -> None:
         view = cross_interpreter_consistency.integrated_view(self.conflicting_artifact())
         self.assertEqual(view["raw_claim_analysis"]["conflict_count"], 1)
+        self.assertEqual(view["conflict_views"]["historical_disagreement_count"], 1)
+        self.assertEqual(view["conflict_views"]["active_unresolved_conflict_count"], 1)
         self.assertEqual(
             view["cross_interpreter_comparisons"][0]["relationship"],
             "raw_and_active_conflict",
         )
 
-    def test_temporal_resolution_preserves_raw_conflict_as_history(self) -> None:
+    def test_supersession_preserves_history_but_clears_active_conflict(self) -> None:
         artifact = self.conflicting_artifact()
         artifact["relations"].append({
             "subject": "claim-C2", "predicate": "supersedes", "object": "claim-C1"
         })
         view = cross_interpreter_consistency.integrated_view(artifact)
         self.assertEqual(view["raw_claim_analysis"]["conflict_count"], 1)
+        self.assertEqual(view["conflict_views"]["historical_disagreement_count"], 1)
+        self.assertEqual(view["conflict_views"]["active_unresolved_conflict_count"], 0)
+        self.assertEqual(
+            view["conflict_views"]["historical_disagreements"][0]["claim_ids"],
+            ["claim-C1", "claim-C2"],
+        )
+        self.assertEqual(view["conflict_views"]["active_unresolved_conflicts"], [])
         self.assertEqual(
             view["temporal_analysis"]["groups"][0]["status"],
             "resolved_by_explicit_later_supersession",
@@ -70,9 +79,39 @@ class CrossInterpreterConsistencyTests(unittest.TestCase):
         )
         self.assertTrue(view["semantic_boundary"]["raw_claim_history_is_preserved"])
         self.assertTrue(view["semantic_boundary"]["temporal_supersession_does_not_delete_history"])
+        self.assertEqual(view["semantic_boundary"]["conflict_semantics"], "both_views_separately")
+
+    def test_invalid_supersession_does_not_hide_active_conflict(self) -> None:
+        artifact = self.conflicting_artifact()
+        for claim in artifact["claims"]:
+            if claim.get("id") == "claim-C1":
+                claim["observed_at"] = "2026-10-08T11:00:00-05:00"
+            elif claim.get("id") == "claim-C2":
+                claim["observed_at"] = "2026-10-08T12:00:00-05:00"
+        artifact["relations"].append({
+            "subject": "claim-C1", "predicate": "supersedes", "object": "claim-C2"
+        })
+        view = cross_interpreter_consistency.integrated_view(artifact)
+        self.assertEqual(view["temporal_analysis"]["rejected_supersessions"][0]["reason"],
+                         "superseding_claim_not_later")
+        self.assertEqual(view["conflict_views"]["historical_disagreement_count"], 1)
+        self.assertEqual(view["conflict_views"]["active_unresolved_conflict_count"], 1)
+
+    def test_counts_are_group_counts_not_pair_counts(self) -> None:
+        artifact = self.conflicting_artifact()
+        artifact["claims"].append({
+            "id": "claim-C3", "subject": "crack-C", "predicate": "condition",
+            "object": "uncertain", "epistemic_status": "verified", "confidence": 0.7,
+            "scope": "member-M", "observed_at": "2026-10-08T13:00:00-05:00",
+            "source_ref": "inspector-J", "resolution": "unresolved",
+            "significance": "follow_up_inspection",
+        })
+        view = cross_interpreter_consistency.integrated_view(artifact)
+        self.assertEqual(view["conflict_views"]["historical_disagreement_count"], 1)
+        self.assertEqual(view["conflict_views"]["active_unresolved_conflict_count"], 1)
         self.assertEqual(
-            view["semantic_boundary"]["whether_raw_conflicts_should_be_named_active_conflicts"],
-            "requires_contract_decision",
+            view["conflict_views"]["count_unit"],
+            "conflicting_subject_predicate_scope_group",
         )
 
     def test_combined_outputs_survive_json_and_relational_round_trips(self) -> None:
