@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
-"""CASE-004I: validate explicit resolution and typed escalation transitions.
-
-This is a narrow experiment contract, not a safety or domain-authority engine.
-"""
+"""CASE-004I/004J: explicit resolution, typed escalation, and event integrity."""
 from __future__ import annotations
 
 from datetime import datetime
@@ -39,6 +36,28 @@ def check_contract(artifact: dict[str, Any], claim_id: str = "claim-C1") -> dict
     }
     events = artifact.get("events", [])
 
+    event_ids: dict[str, list[int]] = {}
+    malformed_event_ids: list[int] = []
+    for index, event in enumerate(events):
+        event_id = event.get("id")
+        if not isinstance(event_id, str) or not event_id:
+            malformed_event_ids.append(index)
+        else:
+            event_ids.setdefault(event_id, []).append(index)
+    duplicate_event_ids = sorted(event_id for event_id, indexes in event_ids.items() if len(indexes) > 1)
+    event_integrity_errors = []
+    if malformed_event_ids:
+        event_integrity_errors.append({
+            "code": "event_ids_must_be_nonempty_strings",
+            "event_indexes": malformed_event_ids,
+        })
+    for event_id in duplicate_event_ids:
+        event_integrity_errors.append({
+            "code": "duplicate_event_id",
+            "event_id": event_id,
+            "event_indexes": event_ids[event_id],
+        })
+
     resolution_events = [
         event for event in events
         if event.get("type") == "resolution_confirmed" and event.get("claim_ref") == claim_id
@@ -48,8 +67,11 @@ def check_contract(artifact: dict[str, Any], claim_id: str = "claim-C1") -> dict
         if len(resolution_events) != 1:
             resolution_errors.append("resolved_state_requires_exactly_one_resolution_confirmed_event")
         for event in resolution_events:
-            if not isinstance(event.get("id"), str) or not event["id"]:
+            event_id = event.get("id")
+            if not isinstance(event_id, str) or not event_id:
                 resolution_errors.append("resolution_event_missing_id")
+            elif event_id in duplicate_event_ids:
+                resolution_errors.append("resolution_event_id_must_be_unique")
             if not isinstance(event.get("actor_ref"), str) or event.get("actor_ref") not in entities:
                 resolution_errors.append("resolution_event_actor_must_reference_known_entity")
             if _zoned_datetime(event.get("occurred_at")) is None:
@@ -66,7 +88,8 @@ def check_contract(artifact: dict[str, Any], claim_id: str = "claim-C1") -> dict
     escalation_errors: list[dict[str, str]] = []
     current_state: str | None = None
     previous_time: datetime | None = None
-    for index, event in enumerate(escalation_events):
+    seen_escalation_ids: set[str] = set()
+    for event in escalation_events:
         event_id = event.get("id")
         event_type = event.get("type")
         actor_ref = event.get("actor_ref")
@@ -74,6 +97,10 @@ def check_contract(artifact: dict[str, Any], claim_id: str = "claim-C1") -> dict
         problems: list[str] = []
         if not isinstance(event_id, str) or not event_id:
             problems.append("missing_event_id")
+        elif event_id in seen_escalation_ids or event_id in duplicate_event_ids:
+            problems.append("event_id_must_be_unique")
+        if isinstance(event_id, str):
+            seen_escalation_ids.add(event_id)
         if actor_ref not in entities:
             problems.append("actor_must_reference_known_entity")
         if occurred_at is None:
@@ -94,6 +121,10 @@ def check_contract(artifact: dict[str, Any], claim_id: str = "claim-C1") -> dict
 
     return {
         "claim_id": claim_id,
+        "event_integrity": {
+            "contract_valid": not event_integrity_errors,
+            "errors": event_integrity_errors,
+        },
         "resolution": {
             "recorded_state": claim.get("resolution"),
             "contract_valid": not resolution_errors,
