@@ -6,10 +6,16 @@ It is not a safety assessor or a general-purpose contradiction solver.
 """
 from __future__ import annotations
 
+import json
 from collections import defaultdict
 from typing import Any
 
 VERIFIED = "verified"
+
+
+def _value_key(value: Any) -> str:
+    """Create a deterministic key for arbitrary JSON-compatible claim values."""
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
 def analyze_claims(artifact: dict[str, Any]) -> dict[str, Any]:
@@ -40,14 +46,16 @@ def analyze_claims(artifact: dict[str, Any]) -> dict[str, Any]:
         grouped[(claim.get("subject"), claim.get("predicate"), claim.get("scope"))].append(summary)
 
     conflicts: list[dict[str, Any]] = []
-    for (subject, predicate, scope), group in grouped.items():
+    for (subject, predicate, scope), group in sorted(
+        grouped.items(), key=lambda item: tuple(str(part) for part in item[0])
+    ):
         verified = [c for c in group if c["epistemic_status"] == VERIFIED]
         values: dict[str, list[str]] = defaultdict(list)
+        display_values: dict[str, Any] = {}
         for claim in verified:
-            # Values are strings in this fixture/schema. JSON keeps object types
-            # intact, but stringifying here is only a stable display key.
-            value_key = repr(claim["object"])
+            value_key = _value_key(claim["object"])
             values[value_key].append(claim["claim_id"])
+            display_values[value_key] = claim["object"]
         if len(values) > 1:
             conflicts.append({
                 "subject": subject,
@@ -55,15 +63,15 @@ def analyze_claims(artifact: dict[str, Any]) -> dict[str, Any]:
                 "scope": scope,
                 "claim_ids": sorted(c["claim_id"] for c in verified),
                 "conflicting_values": [
-                    {"value": value, "claim_ids": sorted(ids)}
-                    for value, ids in sorted(values.items())
+                    {"value": display_values[key], "claim_ids": sorted(ids)}
+                    for key, ids in sorted(values.items())
                 ],
                 "status": "conflicting_verified_claims",
             })
 
     return {
         "claim_count": len(summaries),
-        "claims": summaries,
+        "claims": sorted(summaries, key=lambda claim: claim["claim_id"]),
         "conflicts": conflicts,
         "conflict_count": len(conflicts),
         "decision_boundary": {
@@ -72,3 +80,7 @@ def analyze_claims(artifact: dict[str, Any]) -> dict[str, Any]:
             "human_review_required_for_conflict": bool(conflicts),
         },
     }
+
+
+if __name__ == "__main__":
+    raise SystemExit("Import analyze_claims() from the test harness; no CLI is defined.")
