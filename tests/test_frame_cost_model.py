@@ -50,7 +50,18 @@ class FrameCostModelTests(unittest.TestCase):
         self.assertEqual({r["change_interval"] for r in rows}, {None, 10, 4, 2})
         self.assertTrue(all(r["explicit_json_bytes"] > 0 for r in rows))
         self.assertTrue(all(r["total_frame_protocol_bytes"] > 0 for r in rows))
-        # Deliberately no assertion that frame encoding always wins.
+
+    def test_observed_break_even_is_limited_to_changing_schema_cases(self) -> None:
+        rows = benchmark_matrix()
+        stable = [r for r in rows if r["change_interval"] is None]
+        self.assertTrue(all(r["bytes_saved"] < 0 for r in stable))
+        for interval, expected_first_win in ((10, 100), (4, 50), (2, 50)):
+            cases = sorted(
+                (r for r in rows if r["change_interval"] == interval),
+                key=lambda r: r["messages"],
+            )
+            first_win = next((r["messages"] for r in cases if r["bytes_saved"] >= 0), None)
+            self.assertEqual(first_win, expected_first_win)
 
 
 if __name__ == "__main__":
