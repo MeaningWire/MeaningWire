@@ -37,10 +37,13 @@ class CompactFrameEnvelopeTests(unittest.TestCase):
         encoded = encode_compact_scene(self.scene, self.frame)
         bad_ref = {**encoded, "frame_ref": "unknown-frame"}
         bad_version = {**encoded, "frame_version": 2}
+        bad_float_version = {**encoded, "frame_version": 1.0}
         with self.assertRaises(ValueError):
             decode_compact_scene(bad_ref, self.frame)
         with self.assertRaises(ValueError):
             decode_compact_scene(bad_version, self.frame)
+        with self.assertRaises(ValueError):
+            decode_compact_scene(bad_float_version, self.frame)
 
     def test_tampered_cached_frame_digest_fails_closed(self) -> None:
         encoded = encode_compact_scene(self.scene, self.frame)
@@ -64,13 +67,27 @@ class CompactFrameEnvelopeTests(unittest.TestCase):
             + batch["compact_instance_bytes"],
         )
 
+    def test_observed_break_even_boundaries(self) -> None:
+        for interval, expected_first_win in ((None, 5), (10, 5), (4, 25), (2, 25)):
+            first_win = None
+            for count in (1, 2, 5, 10, 25, 50, 100):
+                row = compare_envelope_costs(count, interval)
+                if row["compact_bytes_saved"] >= 0:
+                    first_win = count
+                    break
+            self.assertEqual(first_win, expected_first_win)
+
     def test_schema_update_cost_is_charged_to_both_variants(self) -> None:
         row = compare_envelope_costs(20, 4)
         self.assertEqual(row["schema_updates"], 4)
-        self.assertEqual(row["existing_total_bytes"] - row["existing_instance_bytes"],
-                         row["initial_frame_bytes"] + row["frame_update_bytes"])
-        self.assertEqual(row["compact_total_bytes"] - row["compact_instance_bytes"],
-                         row["initial_frame_bytes"] + row["frame_update_bytes"])
+        self.assertEqual(
+            row["existing_total_bytes"] - row["existing_instance_bytes"],
+            row["initial_frame_bytes"] + row["frame_update_bytes"],
+        )
+        self.assertEqual(
+            row["compact_total_bytes"] - row["compact_instance_bytes"],
+            row["initial_frame_bytes"] + row["frame_update_bytes"],
+        )
 
 
 if __name__ == "__main__":
