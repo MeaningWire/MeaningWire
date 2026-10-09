@@ -104,9 +104,9 @@ def check_contract(artifact: dict[str, Any], claim_id: str = "claim-C1") -> dict
     if missing_event_id_positions:
         event_integrity_errors.append("every_event_requires_non_empty_id")
 
-    if duplicate_event_ids and resolution_events:
+    if any(event.get("id") in duplicate_event_ids for event in resolution_events):
         resolution_errors.append("resolution_event_id_collision")
-    if duplicate_event_ids and escalation_events:
+    if any(event.get("id") in duplicate_event_ids for event in escalation_events):
         escalation_errors.append({
             "event_id": ",".join(duplicate_event_ids),
             "event_type": "event_identity",
