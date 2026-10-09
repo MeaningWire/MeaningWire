@@ -6,16 +6,12 @@ It is not a safety assessor or a general-purpose contradiction solver.
 """
 from __future__ import annotations
 
-import json
 from collections import defaultdict
 from typing import Any
 
+import value_equality
+
 VERIFIED = "verified"
-
-
-def _value_key(value: Any) -> str:
-    """Create a deterministic key for arbitrary JSON-compatible claim values."""
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
 def analyze_claims(artifact: dict[str, Any]) -> dict[str, Any]:
@@ -53,7 +49,10 @@ def analyze_claims(artifact: dict[str, Any]) -> dict[str, Any]:
         values: dict[str, list[str]] = defaultdict(list)
         display_values: dict[str, Any] = {}
         for claim in verified:
-            value_key = _value_key(claim["object"])
+            value_key = value_equality.value_key(
+                claim["object"], artifact, subject=claim["subject"],
+                predicate=claim["predicate"], scope=claim["scope"],
+            )
             values[value_key].append(claim["claim_id"])
             display_values[value_key] = claim["object"]
         if len(values) > 1:
@@ -74,6 +73,14 @@ def analyze_claims(artifact: dict[str, Any]) -> dict[str, Any]:
         "claims": sorted(summaries, key=lambda claim: claim["claim_id"]),
         "conflicts": conflicts,
         "conflict_count": len(conflicts),
+        "value_equality_contract": value_equality.equality_policy(
+            artifact, subject=None, predicate=None, scope=None
+        ) if not artifact.get("claims") else {
+            "contract_version": value_equality.CONTRACT_VERSION,
+            "rule_count": len(artifact.get("value_equality_rules", [])),
+            "default_rule": "canonical_json",
+            "rule_scope": "explicit subject/predicate/scope matching",
+        },
         "decision_boundary": {
             "whole_bridge_unsafe_established": False,
             "automatic_resolution_performed": False,

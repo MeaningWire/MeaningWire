@@ -2,17 +2,13 @@
 """CASE-004F: bounded time-aware claim supersession experiment."""
 from __future__ import annotations
 
-import json
 from collections import defaultdict
 from datetime import datetime
 from typing import Any
 
+import value_equality
+
 VERIFIED = "verified"
-
-
-def _value_key(value: Any) -> str:
-    """Use the same canonical JSON equality rule as raw claim analysis."""
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
 def _parse_time(value: Any) -> datetime | None:
@@ -91,7 +87,10 @@ def analyze_temporal_claims(artifact: dict[str, Any]) -> dict[str, Any]:
         values: dict[str, list[str]] = defaultdict(list)
         display_values: dict[str, Any] = {}
         for claim in active:
-            key = _value_key(claim.get("object"))
+            key = value_equality.value_key(
+                claim.get("object"), artifact, subject=claim.get("subject"),
+                predicate=claim.get("predicate"), scope=claim.get("scope"),
+            )
             values[key].append(claim["id"])
             display_values[key] = claim.get("object")
         if len(values) > 1:
@@ -123,6 +122,12 @@ def analyze_temporal_claims(artifact: dict[str, Any]) -> dict[str, Any]:
             rejected_edges, key=lambda edge: (edge["newer_claim_id"], edge["older_claim_id"], edge["reason"])
         ),
         "groups": groups,
+        "value_equality_contract": {
+            "contract_version": value_equality.CONTRACT_VERSION,
+            "rule_count": len(artifact.get("value_equality_rules", [])),
+            "default_rule": "canonical_json",
+            "rule_scope": "explicit subject/predicate/scope matching",
+        },
         "decision_boundary": {
             "automatic_truth_selection": False,
             "whole_bridge_unsafe_established": False,
