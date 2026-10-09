@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""CASE-004K: compare raw evidence conflicts with temporal active-claim state."""
+"""CASE-004K/L: cross-interpreter consistency and dual conflict views."""
 from __future__ import annotations
 
 from typing import Any
 
 import artifact_semantics
+import conflict_views
 import multi_claim_reasoning
 import resolution_escalation_contract
 import temporal_claim_reasoning
@@ -12,12 +13,13 @@ from semantic_roundtrip import reason
 
 
 def integrated_view(artifact: dict[str, Any], claim_id: str = "claim-C1") -> dict[str, Any]:
-    """Keep distinct interpreter outputs visible and flag their semantic relationship."""
+    """Keep interpreter outputs distinct and publish explicit conflict measures."""
     raw_claims = multi_claim_reasoning.analyze_claims(artifact)
     temporal = temporal_claim_reasoning.analyze_temporal_claims(artifact)
     field_semantics = artifact_semantics.interpret_artifact(artifact, claim_id)
     contract = resolution_escalation_contract.check_contract(artifact, claim_id)
     base_reasoning = reason(artifact)
+    dual_conflicts = conflict_views.build_conflict_views(raw_claims, temporal)
 
     temporal_by_key = {
         (group.get("subject"), group.get("predicate"), group.get("scope")): group
@@ -46,12 +48,18 @@ def integrated_view(artifact: dict[str, Any], claim_id: str = "claim-C1") -> dic
         "base_reasoning": base_reasoning,
         "raw_claim_analysis": raw_claims,
         "temporal_analysis": temporal,
+        "conflict_views": dual_conflicts,
         "field_semantics": field_semantics,
         "resolution_escalation_contract": contract,
         "cross_interpreter_comparisons": comparisons,
         "semantic_boundary": {
             "raw_claim_history_is_preserved": True,
             "temporal_supersession_does_not_delete_history": True,
-            "whether_raw_conflicts_should_be_named_active_conflicts": "requires_contract_decision",
+            "conflict_semantics": "both_views_separately",
+            "historical_disagreement_and_active_unresolved_conflict_are_distinct_measures": True,
         },
     }
+
+
+if __name__ == "__main__":
+    raise SystemExit("Import integrated_view() from the test harness; no CLI is defined.")
