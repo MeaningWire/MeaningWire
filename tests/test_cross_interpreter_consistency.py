@@ -114,6 +114,27 @@ class CrossInterpreterConsistencyTests(unittest.TestCase):
             "conflicting_subject_predicate_scope_group",
         )
 
+    def test_structured_values_with_different_key_order_are_semantically_equal(self) -> None:
+        artifact = self.conflicting_artifact()
+        for claim in artifact["claims"]:
+            if claim.get("id") == "claim-C1":
+                claim["object"] = {"surface": "crack", "depth_mm": 2}
+            elif claim.get("id") == "claim-C2":
+                claim["object"] = {"depth_mm": 2, "surface": "crack"}
+
+        view = cross_interpreter_consistency.integrated_view(artifact)
+        self.assertEqual(view["raw_claim_analysis"]["conflict_count"], 0)
+        self.assertEqual(view["conflict_views"]["historical_disagreement_count"], 0)
+        self.assertEqual(view["conflict_views"]["active_unresolved_conflict_count"], 0)
+        self.assertEqual(
+            view["temporal_analysis"]["groups"][0]["status"],
+            "no_verified_conflict",
+        )
+        self.assertEqual(
+            len(view["temporal_analysis"]["groups"][0]["active_values"]),
+            1,
+        )
+
     def test_combined_outputs_survive_json_and_relational_round_trips(self) -> None:
         artifact = self.conflicting_artifact()
         artifact["relations"].append({
