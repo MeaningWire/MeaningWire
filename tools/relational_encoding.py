@@ -24,6 +24,8 @@ CLAIM_FIELDS = (
     "scope", "observed_at", "source_ref", "resolution", "significance",
 )
 EVENT_FIELDS = ("id", "type", "occurred_at", "actor_ref", "claim_ref")
+RULES_FIELD = "value_equality_rules"
+
 POLICY_FIELDS = (
     "id", "version", "rule", "reported_defect_action", "verified_defect_action",
     "whole_bridge_unsafe_requires",
@@ -42,7 +44,8 @@ def require_exact_keys(record: dict[str, Any], fields: tuple[str, ...], where: s
 
 def encode_relational(artifact: dict[str, Any]) -> dict[str, Any]:
     """Encode the fixture as tables of positional tuples under a shared schema."""
-    require_exact_keys(artifact, ROOT_FIELDS + ("entities", "relations", "claims", "events", "policy"), "root")
+    root_fields = ROOT_FIELDS + ((RULES_FIELD,) if RULES_FIELD in artifact else ())
+    require_exact_keys(artifact, root_fields + ("entities", "relations", "claims", "events", "policy"), "root")
     for name, fields in (
         ("entities", ENTITY_FIELDS),
         ("relations", RELATION_FIELDS),
@@ -53,8 +56,8 @@ def encode_relational(artifact: dict[str, Any]) -> dict[str, Any]:
             require_exact_keys(record, fields, f"{name}[{index}]")
     require_exact_keys(artifact["policy"], POLICY_FIELDS, "policy")
     return {
-        "layout": "case-004c-v1",
-        "root": [artifact[key] for key in ROOT_FIELDS],
+        "layout": "case-004c-v2" if RULES_FIELD in artifact else "case-004c-v1",
+        "root": [artifact[key] for key in root_fields],
         "entities": [[record[key] for key in ENTITY_FIELDS] for record in artifact["entities"]],
         "relations": [[record[key] for key in RELATION_FIELDS] for record in artifact["relations"]],
         "claims": [[record[key] for key in CLAIM_FIELDS] for record in artifact["claims"]],
@@ -74,8 +77,10 @@ def decode_relational(encoded: dict[str, Any]) -> dict[str, Any]:
             f"relational envelope mismatch: missing={sorted(envelope_fields - actual_fields)}, "
             f"unexpected={sorted(actual_fields - envelope_fields)}"
         )
-    if encoded["layout"] != "case-004c-v1":
+    layout = encoded["layout"]
+    if layout not in ("case-004c-v1", "case-004c-v2"):
         raise ValueError("unsupported relational layout")
+    root_fields = ROOT_FIELDS + ((RULES_FIELD,) if layout == "case-004c-v2" else ())
     def records(rows: list[list[Any]], fields: tuple[str, ...], where: str) -> list[dict[str, Any]]:
         output = []
         for index, row in enumerate(rows):
@@ -85,13 +90,13 @@ def decode_relational(encoded: dict[str, Any]) -> dict[str, Any]:
         return output
 
     root = encoded["root"]
-    if not isinstance(root, list) or len(root) != len(ROOT_FIELDS):
+    if not isinstance(root, list) or len(root) != len(root_fields):
         raise ValueError("root tuple arity mismatch")
     policy = encoded["policy"]
     if not isinstance(policy, list) or len(policy) != len(POLICY_FIELDS):
         raise ValueError("policy tuple arity mismatch")
     return {
-        **dict(zip(ROOT_FIELDS, root)),
+        **dict(zip(root_fields, root)),
         "entities": records(encoded["entities"], ENTITY_FIELDS, "entities"),
         "relations": records(encoded["relations"], RELATION_FIELDS, "relations"),
         "claims": records(encoded["claims"], CLAIM_FIELDS, "claims"),
