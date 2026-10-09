@@ -38,6 +38,12 @@ def check_contract(artifact: dict[str, Any], claim_id: str = "claim-C1") -> dict
         if isinstance(entity.get("id"), str)
     }
     events = artifact.get("events", [])
+    event_ids = [event.get("id") for event in events if isinstance(event.get("id"), str) and event.get("id")]
+    duplicate_event_ids = sorted({event_id for event_id in event_ids if event_ids.count(event_id) > 1})
+    missing_event_id_positions = [
+        index for index, event in enumerate(events)
+        if not isinstance(event.get("id"), str) or not event.get("id")
+    ]
 
     resolution_events = [
         event for event in events
@@ -92,11 +98,32 @@ def check_contract(artifact: dict[str, Any], claim_id: str = "claim-C1") -> dict
             current_state = event_type
             previous_time = occurred_at
 
+    event_integrity_errors: list[str] = []
+    if duplicate_event_ids:
+        event_integrity_errors.append("event_ids_must_be_globally_unique")
+    if missing_event_id_positions:
+        event_integrity_errors.append("every_event_requires_non_empty_id")
+
+    if duplicate_event_ids and resolution_events:
+        resolution_errors.append("resolution_event_id_collision")
+    if duplicate_event_ids and escalation_events:
+        escalation_errors.append({
+            "event_id": ",".join(duplicate_event_ids),
+            "event_type": "event_identity",
+            "problems": "event_ids_must_be_globally_unique",
+        })
+
     return {
         "claim_id": claim_id,
+        "event_integrity": {
+            "contract_valid": not event_integrity_errors,
+            "duplicate_event_ids": duplicate_event_ids,
+            "missing_event_positions": missing_event_id_positions,
+            "errors": event_integrity_errors,
+        },
         "resolution": {
             "recorded_state": claim.get("resolution"),
-            "contract_valid": not resolution_errors,
+            "contract_valid": not resolution_errors and not duplicate_event_ids and not missing_event_id_positions,
             "errors": sorted(set(resolution_errors)),
             "confirmed_event_ids": sorted(
                 str(event.get("id")) for event in resolution_events
@@ -108,7 +135,7 @@ def check_contract(artifact: dict[str, Any], claim_id: str = "claim-C1") -> dict
                 str(event.get("id")) for event in escalation_events
             ],
             "derived_state": current_state,
-            "contract_valid": not escalation_errors,
+            "contract_valid": not escalation_errors and not duplicate_event_ids and not missing_event_id_positions,
             "errors": escalation_errors,
         },
         "significance": {
