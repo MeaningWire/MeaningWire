@@ -38,10 +38,12 @@ def decode_compact_scene(encoded: dict[str, Any], frame: dict[str, Any]) -> dict
     checked = _checked_frame(frame)
     if not isinstance(encoded, dict) or set(encoded) != {"frame_ref", "frame_version", "payload"}:
         raise ValueError("compact scene envelope mismatch")
+    version = encoded["frame_version"]
     if (
         encoded["frame_ref"] != checked["frame_id"]
-        or isinstance(encoded["frame_version"], bool)
-        or encoded["frame_version"] != checked["version"]
+        or isinstance(version, bool)
+        or not isinstance(version, int)
+        or version != checked["version"]
     ):
         raise ValueError("unknown or incompatible cached frame")
     payload = encoded["payload"]
