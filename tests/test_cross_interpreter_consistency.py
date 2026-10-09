@@ -219,5 +219,57 @@ class CrossInterpreterConsistencyTests(unittest.TestCase):
         self.assertFalse(view["resolution_escalation_contract"]["significance"]["causes_automatic_action"])
 
 
+    def _round_trip_variants(self, artifact: dict) -> list[tuple[str, dict]]:
+        json_reconstructed = json.loads(canonical_bytes(artifact).decode("utf-8"))
+        relational_reconstructed = relational_encoding.decode_relational(
+            json.loads(canonical_bytes(relational_encoding.encode_relational(artifact)).decode("utf-8"))
+        )
+        return [("json", json_reconstructed), ("relational", relational_reconstructed)]
+
+    def _numeric_disagreement(self) -> dict:
+        artifact = self.conflicting_artifact()
+        artifact["claims"][0]["object"] = 1
+        artifact["claims"][1]["object"] = 1.0
+        return artifact
+
+    def test_equality_rules_survive_json_and_relational_round_trips(self) -> None:
+        artifact = self._numeric_disagreement()
+        artifact["value_equality_rules"] = [{
+            "predicate": "condition",
+            "scope": "member-M",
+            "rule": "numeric_equivalence",
+        }]
+        for path, reconstructed in self._round_trip_variants(artifact):
+            with self.subTest(path=path):
+                self.assertEqual(canonical_bytes(artifact), canonical_bytes(reconstructed))
+                self.assertEqual(artifact["value_equality_rules"], reconstructed["value_equality_rules"])
+                view = cross_interpreter_consistency.integrated_view(reconstructed)
+                self.assertEqual(view["conflict_views"]["historical_disagreement_count"], 0)
+                self.assertEqual(view["conflict_views"]["active_unresolved_conflict_count"], 0)
+
+    def test_absent_rule_survives_round_trips_and_keeps_conservative_default(self) -> None:
+        artifact = self._numeric_disagreement()
+        self.assertNotIn("value_equality_rules", artifact)
+        for path, reconstructed in self._round_trip_variants(artifact):
+            with self.subTest(path=path):
+                self.assertNotIn("value_equality_rules", reconstructed)
+                view = cross_interpreter_consistency.integrated_view(reconstructed)
+                self.assertEqual(view["conflict_views"]["historical_disagreement_count"], 1)
+                self.assertEqual(view["conflict_views"]["active_unresolved_conflict_count"], 1)
+
+    def test_ambiguous_rules_survive_round_trips_and_fail_closed(self) -> None:
+        artifact = self._numeric_disagreement()
+        artifact["value_equality_rules"] = [
+            {"predicate": "condition", "scope": "member-M", "rule": "numeric_equivalence"},
+            {"predicate": "condition", "rule": "canonical_json"},
+        ]
+        for path, reconstructed in self._round_trip_variants(artifact):
+            with self.subTest(path=path):
+                self.assertEqual(canonical_bytes(artifact), canonical_bytes(reconstructed))
+                with self.assertRaisesRegex(ValueError, "ambiguous value_equality_rules"):
+                    cross_interpreter_consistency.integrated_view(reconstructed)
+
+
+
 if __name__ == "__main__":
     unittest.main()
