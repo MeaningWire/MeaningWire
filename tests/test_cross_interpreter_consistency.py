@@ -83,7 +83,11 @@ class CrossInterpreterConsistencyTests(unittest.TestCase):
 
     def test_invalid_supersession_does_not_hide_active_conflict(self) -> None:
         artifact = self.conflicting_artifact()
-        artifact["claims"][1]["observed_at"] = "2026-10-08T11:00:00-05:00"
+        for claim in artifact["claims"]:
+            if claim.get("id") == "claim-C1":
+                claim["observed_at"] = "2026-10-08T11:00:00-05:00"
+            elif claim.get("id") == "claim-C2":
+                claim["observed_at"] = "2026-10-08T12:00:00-05:00"
         artifact["relations"].append({
             "subject": "claim-C1", "predicate": "supersedes", "object": "claim-C2"
         })
