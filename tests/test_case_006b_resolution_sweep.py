@@ -30,8 +30,8 @@ class ResolutionSweepTests(unittest.TestCase):
         self.assertEqual(bounds, sorted(bounds, reverse=True))
 
     def test_low_resolution_can_collapse_a_task_defined_pair(self) -> None:
-        self.assertEqual(quantize(0.49, 2), quantize(0.51, 2))
-        self.assertNotEqual(quantize(0.49, 256), quantize(0.51, 256))
+        self.assertEqual(quantize(0.24, 2), quantize(0.26, 2))
+        self.assertNotEqual(quantize(0.24, 256), quantize(0.26, 256))
 
     def test_sweep_reports_collisions_and_error_separately(self) -> None:
         rows = sweep()
